@@ -7,7 +7,7 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const checkerboard_size: usize = 8;
+const checkerboard_size: usize = 32;
 
 // checkerboard_size * 2, where each pixel is 4 bytes (rgba)
 var checkerboard_buffer = std.mem.zeroes(
