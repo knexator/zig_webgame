@@ -14,13 +14,21 @@ var checkerboard_buffer = std.mem.zeroes(
     [checkerboard_size][checkerboard_size][4]u8,
 );
 
-// The returned pointer will be used as an offset integer to the wasm memory
-export fn getCheckerboardBufferPointer() [*]u8 {
-    return @ptrCast(&checkerboard_buffer);
-}
-
 export fn getCheckerboardSize() usize {
     return checkerboard_size;
+}
+
+var player_x: usize = checkerboard_size / 2;
+var player_y: usize = checkerboard_size / 2;
+
+export fn keydown(code: u32) void {
+    switch (code) {
+        0 => player_y -= 1,
+        1 => player_y += 1,
+        2 => player_x -= 1,
+        3 => player_x += 1,
+        else => {},
+    }
 }
 
 export fn colorCheckerboard(
@@ -30,7 +38,7 @@ export fn colorCheckerboard(
     light_value_red: u8,
     light_value_green: u8,
     light_value_blue: u8,
-) void {
+) [*]u8 {
     for (&checkerboard_buffer, 0..) |*row, y| {
         for (row, 0..) |*square, x| {
             var is_dark_square = true;
@@ -58,4 +66,10 @@ export fn colorCheckerboard(
             square.*[3] = 255;
         }
     }
+    checkerboard_buffer[player_y][player_x][0] = 255;
+    checkerboard_buffer[player_y][player_x][1] = 255;
+    checkerboard_buffer[player_y][player_x][2] = 0;
+    checkerboard_buffer[player_y][player_x][3] = 255;
+
+    return @ptrCast(&checkerboard_buffer);
 }

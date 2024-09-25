@@ -34,7 +34,7 @@ const getLightValue = () => {
 };
 
 const drawCheckerboard = () => {
-    wasm_exports.colorCheckerboard(
+    const buffer_offset = wasm_exports.colorCheckerboard(
         getDarkValue(),
         getDarkValue(),
         getDarkValue(),
@@ -43,13 +43,10 @@ const drawCheckerboard = () => {
         getLightValue()
     );
 
-    const bufferOffset = wasm_exports.getCheckerboardBufferPointer();
     const imageDataArray = wasm_memory.slice(
-        bufferOffset,
-        bufferOffset + checkerboardSize * checkerboardSize * 4
+        buffer_offset,
+        buffer_offset + checkerboardSize * checkerboardSize * 4
     );
-    console.log(bufferOffset);
-    console.log(wasm_exports.memory);
 
     imageData.data.set(imageDataArray);
 
@@ -58,3 +55,25 @@ const drawCheckerboard = () => {
 };
 
 drawCheckerboard();
+
+document.addEventListener("keydown", ev => {
+    switch (ev.code) {
+        case 'KeyW':
+            wasm_exports.keydown(0);
+            break;
+        case 'KeyS':
+            wasm_exports.keydown(1);
+            break;
+        case 'KeyA':
+            wasm_exports.keydown(2);
+            break;
+        case 'KeyD':
+            wasm_exports.keydown(3);
+            break;
+    
+        default:
+            break;
+    }
+
+    drawCheckerboard();
+})
