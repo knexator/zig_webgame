@@ -1,29 +1,49 @@
 const canvas_ctx = document.querySelector("#ctx_canvas");
 const ctx = canvas_ctx.getContext("2d");
-
-const scale = 0.25;
-canvas_ctx.width = Math.floor(canvas_ctx.clientWidth * scale);
-canvas_ctx.height = Math.floor(canvas_ctx.clientHeight * scale);
+canvas_ctx.style.imageRendering = "pixelated";
 
 const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v0.wasm"));
 const wasm_exports = asdf.instance.exports;
+const wasm_memory = new Uint8Array(wasm_exports.memory.buffer);
 
-// const bytes = new Uint8Array(wasm_exports.memory.buffer, 0, 10);
+// Automatically set canvas size as defined in `checkerboard.zig`
+const checkerboardSize = wasm_exports.getCheckerboardSize();
+canvas_ctx.width = checkerboardSize;
+canvas_ctx.height = checkerboardSize;
 
-const PIXEL_SIZE = 1;
-for (let j = 0; j < canvas_ctx.height; j += PIXEL_SIZE) {
-    for (let i = 0; i < canvas_ctx.width; i += PIXEL_SIZE) {
-        const r = wasm_exports.getPixel(i / canvas_ctx.width, j / canvas_ctx.height, 0);
-        const g = wasm_exports.getPixel(i / canvas_ctx.width, j / canvas_ctx.height, 1);
-        const b = wasm_exports.getPixel(i / canvas_ctx.width, j / canvas_ctx.height, 2);
-        ctx.fillStyle = rgbToHex(r,g,b);
-        ctx.fillRect(i, j, PIXEL_SIZE, PIXEL_SIZE);
-    }
-}
+const context = canvas_ctx.getContext("2d");
+const imageData = context.createImageData(canvas_ctx.width, canvas_ctx.height);
+context.clearRect(0, 0, canvas_ctx.width, canvas_ctx.height);
 
-function rgbToHex(r, g, b) {
-    return "#" + [r, g, b].map(num => {
-        const hex = num.toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-    }).join('');
-}
+const getDarkValue = () => {
+    return Math.floor(Math.random() * 100);
+};
+const getLightValue = () => {
+    return Math.floor(Math.random() * 127) + 127;
+};
+
+const drawCheckerboard = () => {
+    wasm_exports.colorCheckerboard(
+        getDarkValue(),
+        getDarkValue(),
+        getDarkValue(),
+        getLightValue(),
+        getLightValue(),
+        getLightValue()
+    );
+
+    const bufferOffset = wasm_exports.getCheckerboardBufferPointer();
+    const imageDataArray = wasm_memory.slice(
+        bufferOffset,
+        bufferOffset + checkerboardSize * checkerboardSize * 4
+    );
+    console.log(bufferOffset);
+    console.log(wasm_exports.memory);
+
+    imageData.data.set(imageDataArray);
+
+    context.clearRect(0, 0, canvas_ctx.width, canvas_ctx.height);
+    context.putImageData(imageData, 0, 0);
+};
+
+drawCheckerboard();
