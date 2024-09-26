@@ -31,8 +31,9 @@ export fn keydown(code: u32) void {
     }
 }
 
+var global_t: f32 = 0;
 export fn frame(delta_seconds: f32) void {
-    _ = delta_seconds; // autofix
+    global_t += delta_seconds;
 }
 
 export fn draw() [*]u8 {
@@ -63,9 +64,9 @@ export fn draw() [*]u8 {
                 square_value_blue = light_value_blue;
             }
 
-            square.*[0] = square_value_red;
-            square.*[1] = square_value_green;
-            square.*[2] = square_value_blue;
+            square.*[0] = @as(u8, @intCast(@as(usize, @intFromFloat(@as(f32, @floatFromInt(x)) + global_t * 11)) % 256)) ^ @as(u8, @intCast(y % 256));
+            square.*[1] = @as(u8, @intCast(@as(usize, @intFromFloat(@as(f32, @floatFromInt(y)) + global_t * 7)) % 256)) ^ @as(u8, @intCast(x % 256));
+            square.*[2] = @intCast(x ^ y);
             square.*[3] = 255;
         }
     }
