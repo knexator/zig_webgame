@@ -22,39 +22,27 @@ const SCALING_FACTOR = Math.min(
 canvas.style.width = `${canvas.width * SCALING_FACTOR}px`;
 canvas.style.height = `${canvas.height * SCALING_FACTOR}px`;
 
-const context = canvas.getContext("2d");
-const imageData = context.createImageData(canvas.width, canvas.height);
-context.clearRect(0, 0, canvas.width, canvas.height);
+const ctx = canvas.getContext("2d");
+const ctx_data = ctx.createImageData(canvas.width, canvas.height);
 
-const getDarkValue = () => {
-    return Math.floor(Math.random() * 100);
-};
-const getLightValue = () => {
-    return Math.floor(Math.random() * 127) + 127;
-};
+let last_timestamp_millis = 0;
+function every_frame(cur_timestamp_millis) {
+    const delta_seconds = (cur_timestamp_millis - last_timestamp_millis) / 1000;
+    last_timestamp_millis = cur_timestamp_millis;
 
-const drawCheckerboard = () => {
-    const buffer_offset = wasm_exports.colorCheckerboard(
-        getDarkValue(),
-        getDarkValue(),
-        getDarkValue(),
-        getLightValue(),
-        getLightValue(),
-        getLightValue()
-    );
+    wasm_exports.frame(delta_seconds);
 
-    const imageDataArray = wasm_memory.slice(
+    const buffer_offset = wasm_exports.draw();
+    ctx_data.data.set(wasm_memory.slice(
         buffer_offset,
         buffer_offset + checkerboardSize * checkerboardSize * 4
-    );
+    ));
+    ctx.putImageData(ctx_data, 0, 0);
 
-    imageData.data.set(imageDataArray);
+    requestAnimationFrame(every_frame);
+}
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.putImageData(imageData, 0, 0);
-};
-
-drawCheckerboard();
+requestAnimationFrame(every_frame);
 
 document.addEventListener("keydown", ev => {
     switch (ev.code) {
@@ -74,6 +62,4 @@ document.addEventListener("keydown", ev => {
         default:
             break;
     }
-
-    drawCheckerboard();
-})
+});

@@ -7,7 +7,7 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const checkerboard_size: usize = 32;
+const checkerboard_size: usize = 128;
 
 // checkerboard_size * 2, where each pixel is 4 bytes (rgba)
 var checkerboard_buffer = std.mem.zeroes(
@@ -23,22 +23,25 @@ var player_y: usize = checkerboard_size / 2;
 
 export fn keydown(code: u32) void {
     switch (code) {
-        0 => player_y -= 1,
-        1 => player_y += 1,
-        2 => player_x -= 1,
-        3 => player_x += 1,
+        0 => player_y -%= 1,
+        1 => player_y +%= 1,
+        2 => player_x -%= 1,
+        3 => player_x +%= 1,
         else => {},
     }
 }
 
-export fn colorCheckerboard(
-    dark_value_red: u8,
-    dark_value_green: u8,
-    dark_value_blue: u8,
-    light_value_red: u8,
-    light_value_green: u8,
-    light_value_blue: u8,
-) [*]u8 {
+export fn frame(delta_seconds: f32) void {
+    _ = delta_seconds; // autofix
+}
+
+export fn draw() [*]u8 {
+    const dark_value_red: u8 = 0;
+    const dark_value_green: u8 = 0;
+    const dark_value_blue: u8 = 0;
+    const light_value_red: u8 = 255;
+    const light_value_green: u8 = 255;
+    const light_value_blue: u8 = 255;
     for (&checkerboard_buffer, 0..) |*row, y| {
         for (row, 0..) |*square, x| {
             var is_dark_square = true;
