@@ -53,9 +53,9 @@ const TileState = union(enum) {
 };
 
 var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
-var head_pos: Vec2i = undefined;
+var head_pos: BoardPosition = undefined;
 
-fn drawBoardTile(pos: Vec2i, tile: TileState) void {
+fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
     switch (tile) {
         .empty => {},
         .bomb => fillTileWithCircle(pos, COLORS.BOMB),
@@ -70,7 +70,7 @@ var player_y: usize = SCREEN_SIDE / 2;
 var turn: usize = 0;
 var turn_offset: f32 = 0;
 
-const Vec2i = struct {
+const BoardPosition = struct {
     const Self = @This();
 
     i: usize,
@@ -78,11 +78,27 @@ const Vec2i = struct {
 
     fn plus(vec: Self, dir: Direction) Self {
         return switch (dir) {
-            .Right => Vec2i{ .i = vec.i + 1, .j = vec.j },
-            .Left => Vec2i{ .i = vec.i - 1, .j = vec.j },
-            .Down => Vec2i{ .i = vec.i, .j = vec.j + 1 },
-            .Up => Vec2i{ .i = vec.i, .j = vec.j - 1 },
+            .Right => BoardPosition{ .i = _inc(vec.i), .j = vec.j },
+            .Left => BoardPosition{ .i = _dec(vec.i), .j = vec.j },
+            .Down => BoardPosition{ .i = vec.i, .j = _inc(vec.j) },
+            .Up => BoardPosition{ .i = vec.i, .j = _dec(vec.j) },
         };
+    }
+
+    fn wrap(vec: Self) Self {
+        return BoardPosition{ .i = vec.i % BOARD_SIDE, .j = vec.j % BOARD_SIDE };
+    }
+
+    fn _inc(v: usize) usize {
+        return @mod(v + 1, BOARD_SIDE);
+    }
+
+    fn _dec(v: usize) usize {
+        if (v == 0) {
+            return BOARD_SIDE - 1;
+        } else {
+            return v - 1;
+        }
     }
 };
 
@@ -92,7 +108,7 @@ const Color = struct {
     b: u8,
 };
 
-fn fillTile(tile: Vec2i, color: Color) void {
+fn fillTile(tile: BoardPosition, color: Color) void {
     for (0..TILE_SIDE) |y| {
         for (0..TILE_SIDE) |x| {
             const asdf = &screen_buffer[y + tile.j * TILE_SIDE][x + tile.i * TILE_SIDE];
@@ -105,7 +121,7 @@ fn fillTile(tile: Vec2i, color: Color) void {
 }
 
 // OPTIMIZE
-fn fillTileWithCircle(tile: Vec2i, color: Color) void {
+fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
     if (TILE_SIDE % 2 != 0) @compileError("TILE_SIDE is not even");
     for (0..TILE_SIDE) |y| {
         for (0..TILE_SIDE) |x| {
@@ -160,13 +176,13 @@ export fn frame(delta_seconds: f32) void {
     }
 }
 
-fn tileAt(pos: Vec2i) *TileState {
+fn tileAt(pos: BoardPosition) *TileState {
     return &board_state[pos.j][pos.i];
 }
 
 fn reset_game() void {
     board_state[0][0] = .bomb;
-    head_pos = Vec2i{ .i = 0, .j = 1 };
+    head_pos = BoardPosition{ .i = 0, .j = 1 };
     tileAt(head_pos).* = TileState{ .body_segment = .{
         .visited_at = 0,
         .in_dir = .Left,
