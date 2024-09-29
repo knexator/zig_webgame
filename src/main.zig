@@ -57,7 +57,7 @@ var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = .{.{TileState.empty} ** BOA
 fn drawBoardTile(pos: Vec2i, tile: TileState) void {
     switch (tile) {
         .empty => {},
-        .bomb => fillTile(pos, COLORS.BOMB),
+        .bomb => fillTileWithCircle(pos, COLORS.BOMB),
         .body_segment => fillTile(pos, COLORS.SNAKE.HEAD),
         else => {},
     }
@@ -85,6 +85,25 @@ fn fillTile(tile: Vec2i, color: Color) void {
             asdf[1] = color.g;
             asdf[2] = color.b;
             asdf[3] = 255;
+        }
+    }
+}
+
+// OPTIMIZE
+fn fillTileWithCircle(tile: Vec2i, color: Color) void {
+    if (TILE_SIDE % 2 != 0) @compileError("TILE_SIDE is not even");
+    for (0..TILE_SIDE) |y| {
+        for (0..TILE_SIDE) |x| {
+            const dx = @as(f32, @floatFromInt(x)) - TILE_SIDE / 2 + 0.5;
+            const dy = @as(f32, @floatFromInt(y)) - TILE_SIDE / 2 + 0.5;
+            const dd = dx * dx + dy * dy;
+            if (dd < (TILE_SIDE * TILE_SIDE) / 4) {
+                const asdf = &screen_buffer[y + tile.j * TILE_SIDE][x + tile.i * TILE_SIDE];
+                asdf[0] = color.r;
+                asdf[1] = color.g;
+                asdf[2] = color.b;
+                asdf[3] = 255;
+            }
         }
     }
 }
