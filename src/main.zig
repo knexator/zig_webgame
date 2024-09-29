@@ -17,7 +17,38 @@ export fn getScreenSide() usize {
     return SCREEN_SIDE;
 }
 
-const TILE_SIDE = SCREEN_SIDE / 16;
+const BOARD_SIDE = 16;
+const TILE_SIDE = SCREEN_SIDE / BOARD_SIDE;
+
+const Direction = enum {
+    Left,
+    Right,
+    Up,
+    Down,
+};
+
+const TileState = union(enum) {
+    empty: void,
+    bomb: void,
+    multiplier: void,
+    // clock: ... TODO
+    body_segment: struct {
+        visited_at: i32,
+        in_dir: Direction,
+        out_dir: ?Direction,
+    },
+};
+
+var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
+
+fn drawBoardTile(pos: Vec2i, tile: TileState) void {
+    switch (tile) {
+        .empty => {},
+        .bomb => fillTile(pos, .{ .r = 237, .g = 56, .b = 21 }),
+        .body_segment => fillTile(pos, .{ .r = 133, .g = 206, .b = 54 }),
+        else => {},
+    }
+}
 
 var player_x: usize = SCREEN_SIDE / 2;
 var player_y: usize = SCREEN_SIDE / 2;
@@ -55,9 +86,23 @@ export fn keydown(code: u32) void {
     }
 }
 
+var game_started = false;
 var global_t: f32 = 0;
 export fn frame(delta_seconds: f32) void {
+    if (!game_started) {
+        game_started = true;
+        reset_game();
+    }
     global_t += delta_seconds;
+}
+
+fn reset_game() void {
+    board_state[0][0] = .bomb;
+    board_state[1][0] = TileState{ .body_segment = .{
+        .visited_at = 0,
+        .in_dir = .Left,
+        .out_dir = null,
+    } };
 }
 
 export fn draw() [*]u8 {
@@ -101,6 +146,12 @@ export fn draw() [*]u8 {
 
     fillTile(.{ .i = 1, .j = 2 }, .{ .r = 255, .g = 128, .b = 0 });
     fillTile(.{ .i = 2, .j = 3 }, .{ .r = 255, .g = 128, .b = 0 });
+
+    for (board_state, 0..) |board_row, j| {
+        for (board_row, 0..) |board_tile, i| {
+            drawBoardTile(.{ .i = i, .j = j }, board_tile);
+        }
+    }
 
     return @ptrCast(&screen_buffer);
 }
