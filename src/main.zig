@@ -20,6 +20,19 @@ export fn getScreenSide() usize {
 const BOARD_SIDE = 16;
 const TILE_SIDE = SCREEN_SIDE / BOARD_SIDE;
 
+const COLORS = struct {
+    BOMB: Color = .{ .r = 237, .g = 56, .b = 21 },
+    SNAKE: struct {
+        HEAD: Color = Color{ .r = 133, .g = 206, .b = 54 },
+    } = .{},
+}{};
+
+// const COLORS = struct {
+//     BOMB: Color,
+// }{
+//     .BOMB = Color{ .r = 237, .g = 56, .b = 21 },
+// };
+
 const Direction = enum {
     Left,
     Right,
@@ -44,8 +57,8 @@ var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = .{.{TileState.empty} ** BOA
 fn drawBoardTile(pos: Vec2i, tile: TileState) void {
     switch (tile) {
         .empty => {},
-        .bomb => fillTile(pos, .{ .r = 237, .g = 56, .b = 21 }),
-        .body_segment => fillTile(pos, .{ .r = 133, .g = 206, .b = 54 }),
+        .bomb => fillTile(pos, COLORS.BOMB),
+        .body_segment => fillTile(pos, COLORS.SNAKE.HEAD),
         else => {},
     }
 }
