@@ -1,8 +1,9 @@
 const std = @import("std");
 
-// Although this function looks imperative, note that its job is to
-// declaratively construct a build graph that will be executed by an external
-// runner.
+// taken from https://github.com/daneelsan/minimal-zig-wasm-canvas/blob/master/build.zig
+
+const number_of_pages = 2;
+
 pub fn build(b: *std.Build) void {
     const target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
@@ -25,8 +26,8 @@ pub fn build(b: *std.Build) void {
     exe.export_memory = true;
     exe.stack_size = std.wasm.page_size;
 
-    // This declares intent for the executable to be installed into the
-    // standard location when the user invokes the "install" step (the default
-    // step when running `zig build`).
+    exe.initial_memory = std.wasm.page_size * number_of_pages;
+    exe.max_memory = std.wasm.page_size * number_of_pages;
+
     b.installArtifact(exe);
 }

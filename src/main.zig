@@ -5,23 +5,31 @@ const Direction = enum {
     Right,
     Up,
     Down,
+
+    fn dir2num(d: Direction) u32 {
+        return switch (d) {
+            .Up => 0,
+            .Down => 1,
+            .Left => 2,
+            .Right => 3,
+        };
+    }
+
+    fn num2dir(n: u32) Direction {
+        return switch (n) {
+            0 => .Up,
+            1 => .Down,
+            2 => .Left,
+            3 => .Right,
+            else => unreachable,
+        };
+    }
 };
 
-var next_dir: Direction = undefined;
+var my_global_value: Direction = undefined;
 
-export fn buggy(code: u32) void {
-    consoleLog(code);
-    switch (code) {
-        0 => next_dir = .Up,
-        1 => next_dir = .Down,
-        2 => next_dir = .Left,
-        3 => next_dir = .Right,
-        else => {},
-    }
-    consoleLog(switch (next_dir) {
-        .Up => 0,
-        .Down => 1,
-        .Left => 2,
-        .Right => 3,
-    });
+export fn buggy(new_value: u32) void {
+    consoleLog(new_value);
+    my_global_value = Direction.num2dir(new_value);
+    consoleLog(Direction.dir2num(my_global_value));
 }
