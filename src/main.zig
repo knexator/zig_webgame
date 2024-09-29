@@ -53,6 +53,7 @@ const TileState = union(enum) {
 };
 
 var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
+var head_pos: Vec2i = undefined;
 
 fn drawBoardTile(pos: Vec2i, tile: TileState) void {
     switch (tile) {
@@ -70,8 +71,19 @@ var turn: usize = 0;
 var turn_offset: f32 = 0;
 
 const Vec2i = struct {
+    const Self = @This();
+
     i: usize,
     j: usize,
+
+    fn plus(vec: Self, dir: Direction) Self {
+        return switch (dir) {
+            .Right => Vec2i{ .i = vec.i + 1, .j = vec.j },
+            .Left => Vec2i{ .i = vec.i - 1, .j = vec.j },
+            .Down => Vec2i{ .i = vec.i, .j = vec.j + 1 },
+            .Up => Vec2i{ .i = vec.i, .j = vec.j - 1 },
+        };
+    }
 };
 
 const Color = struct {
@@ -135,17 +147,27 @@ export fn frame(delta_seconds: f32) void {
         turn_offset -= 1;
         turn += 1;
 
-        board_state[1][turn] = TileState{ .body_segment = .{
+        const dir: Direction = if (turn == 3) .Down else .Right;
+        const new_head_pos = head_pos.plus(dir);
+        tileAt(head_pos).body_segment.out_dir = dir;
+
+        tileAt(new_head_pos).* = TileState{ .body_segment = .{
             .visited_at = turn,
             .in_dir = .Left,
             .out_dir = null,
         } };
+        head_pos = new_head_pos;
     }
+}
+
+fn tileAt(pos: Vec2i) *TileState {
+    return &board_state[pos.j][pos.i];
 }
 
 fn reset_game() void {
     board_state[0][0] = .bomb;
-    board_state[1][0] = TileState{ .body_segment = .{
+    head_pos = Vec2i{ .i = 0, .j = 1 };
+    tileAt(head_pos).* = TileState{ .body_segment = .{
         .visited_at = 0,
         .in_dir = .Left,
         .out_dir = null,
