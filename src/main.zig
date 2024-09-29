@@ -19,6 +19,7 @@ export fn getScreenSide() usize {
 
 const BOARD_SIDE = 16;
 const TILE_SIDE = SCREEN_SIDE / BOARD_SIDE;
+const TURN_DURATION = 0.16;
 
 const COLORS = struct {
     BOMB: Color = .{ .r = 237, .g = 56, .b = 21 },
@@ -38,6 +39,15 @@ const Direction = enum {
     Right,
     Up,
     Down,
+
+    fn opposite(d: Direction) Direction {
+        return switch (d) {
+            .Left => .Right,
+            .Right => .Left,
+            .Down => .Up,
+            .Up => .Down,
+        };
+    }
 };
 
 const TileState = union(enum) {
@@ -52,8 +62,25 @@ const TileState = union(enum) {
     },
 };
 
-var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
+var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = undefined;
 var head_pos: BoardPosition = undefined;
+var turn: usize = undefined;
+var turn_offset: f32 = undefined;
+var next_dir: Direction = undefined;
+
+fn reset_game() void {
+    turn = 0;
+    turn_offset = 0;
+    board_state = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
+    board_state[0][0] = .bomb;
+    head_pos = BoardPosition{ .i = 0, .j = 1 };
+    tileAt(head_pos).* = TileState{ .body_segment = .{
+        .visited_at = turn,
+        .in_dir = .Left,
+        .out_dir = null,
+    } };
+    next_dir = .Down;
+}
 
 fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
     switch (tile) {
@@ -63,12 +90,6 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
         else => {},
     }
 }
-
-var player_x: usize = SCREEN_SIDE / 2;
-var player_y: usize = SCREEN_SIDE / 2;
-
-var turn: usize = 0;
-var turn_offset: f32 = 0;
 
 const BoardPosition = struct {
     const Self = @This();
@@ -120,7 +141,7 @@ fn fillTile(tile: BoardPosition, color: Color) void {
     }
 }
 
-// OPTIMIZE
+// OPTIMIZE, maybe
 fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
     if (TILE_SIDE % 2 != 0) @compileError("TILE_SIDE is not even");
     for (0..TILE_SIDE) |y| {
@@ -141,12 +162,14 @@ fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
 
 export fn keydown(code: u32) void {
     switch (code) {
-        0 => player_y -%= 1,
-        1 => player_y +%= 1,
-        2 => player_x -%= 1,
-        3 => player_x +%= 1,
+        0 => next_dir = .Up,
+        1 => next_dir = .Down,
+        2 => next_dir = .Left,
+        3 => next_dir = .Right,
         else => {},
     }
+
+    // next_dir = .Right;
 }
 
 var game_started = false;
@@ -158,18 +181,20 @@ export fn frame(delta_seconds: f32) void {
     }
     global_t += delta_seconds;
 
-    turn_offset += delta_seconds;
+    turn_offset += delta_seconds / TURN_DURATION;
     while (turn_offset >= 1) {
         turn_offset -= 1;
         turn += 1;
 
-        const dir: Direction = if (turn == 3) .Down else .Right;
-        const new_head_pos = head_pos.plus(dir);
-        tileAt(head_pos).body_segment.out_dir = dir;
+        // if (next_dir == tileAt(head_pos).body_segment.in_dir) {
+        //     next_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
+        // }
+        const new_head_pos = head_pos.plus(next_dir);
+        tileAt(head_pos).*.body_segment.out_dir = next_dir;
 
         tileAt(new_head_pos).* = TileState{ .body_segment = .{
             .visited_at = turn,
-            .in_dir = .Left,
+            .in_dir = Direction.opposite(next_dir),
             .out_dir = null,
         } };
         head_pos = new_head_pos;
@@ -178,16 +203,6 @@ export fn frame(delta_seconds: f32) void {
 
 fn tileAt(pos: BoardPosition) *TileState {
     return &board_state[pos.j][pos.i];
-}
-
-fn reset_game() void {
-    board_state[0][0] = .bomb;
-    head_pos = BoardPosition{ .i = 0, .j = 1 };
-    tileAt(head_pos).* = TileState{ .body_segment = .{
-        .visited_at = 0,
-        .in_dir = .Left,
-        .out_dir = null,
-    } };
 }
 
 export fn draw() [*]u8 {
@@ -224,10 +239,6 @@ export fn draw() [*]u8 {
             square.*[3] = 255;
         }
     }
-    screen_buffer[player_y][player_x][0] = 255;
-    screen_buffer[player_y][player_x][1] = 255;
-    screen_buffer[player_y][player_x][2] = 0;
-    screen_buffer[player_y][player_x][3] = 255;
 
     fillTile(.{ .i = 1, .j = 2 }, .{ .r = 255, .g = 128, .b = 0 });
     fillTile(.{ .i = 2, .j = 3 }, .{ .r = 255, .g = 128, .b = 0 });

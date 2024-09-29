@@ -9,7 +9,8 @@ pub fn build(b: *std.Build) void {
         .os_tag = .freestanding,
     });
 
-    const optimize: std.builtin.OptimizeMode = .ReleaseSmall;
+    // const optimize: std.builtin.OptimizeMode = .ReleaseSmall;
+    const optimize: std.builtin.OptimizeMode = .Debug;
 
     const exe = b.addExecutable(.{
         .name = "webgame_v0",
