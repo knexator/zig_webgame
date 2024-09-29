@@ -17,6 +17,8 @@ export fn getScreenSide() usize {
     return SCREEN_SIDE;
 }
 
+const TILE_SIDE = SCREEN_SIDE / 16;
+
 var player_x: usize = SCREEN_SIDE / 2;
 var player_y: usize = SCREEN_SIDE / 2;
 
@@ -30,8 +32,6 @@ const Color = struct {
     g: u8,
     b: u8,
 };
-
-const TILE_SIDE = SCREEN_SIDE / 16;
 
 fn fillTile(tile: Vec2i, color: Color) void {
     for (0..TILE_SIDE) |y| {
