@@ -1,0 +1,23 @@
+(:main-menu
+    ([ping-pong logo-bomb]
+     [ping-pong start-blink])
+
+    (centered-column
+        (draw-logo (logo-bomb is :on))
+        (draw-text "Please scroll down\nto learn to play")
+        (draw-text-blinking "Click anywhere to\nstart" (start-blink is :on))
+        (draw-text "By knexator & Pinchazumos")
+    )
+
+    )
+
+(ping-pong
+    (:on
+        ((float time-remaining))
+        ((:time-passed (float dt))
+            (-= time-remaining dt)
+            (if (<= time-remaining 0)
+                (:off 1.0))
+            ) 
+        )
+    )
