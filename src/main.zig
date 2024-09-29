@@ -7,19 +7,18 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const checkerboard_size: usize = 128;
+const screen_side: usize = 128;
 
-// checkerboard_size * 2, where each pixel is 4 bytes (rgba)
-var checkerboard_buffer = std.mem.zeroes(
-    [checkerboard_size][checkerboard_size][4]u8,
+var screen_buffer = std.mem.zeroes(
+    [screen_side][screen_side][4]u8,
 );
 
-export fn getCheckerboardSize() usize {
-    return checkerboard_size;
+export fn getScreenSide() usize {
+    return screen_side;
 }
 
-var player_x: usize = checkerboard_size / 2;
-var player_y: usize = checkerboard_size / 2;
+var player_x: usize = screen_side / 2;
+var player_y: usize = screen_side / 2;
 
 export fn keydown(code: u32) void {
     switch (code) {
@@ -43,7 +42,7 @@ export fn draw() [*]u8 {
     const light_value_red: u8 = 255;
     const light_value_green: u8 = 255;
     const light_value_blue: u8 = 255;
-    for (&checkerboard_buffer, 0..) |*row, y| {
+    for (&screen_buffer, 0..) |*row, y| {
         for (row, 0..) |*square, x| {
             var is_dark_square = true;
 
@@ -70,10 +69,10 @@ export fn draw() [*]u8 {
             square.*[3] = 255;
         }
     }
-    checkerboard_buffer[player_y][player_x][0] = 255;
-    checkerboard_buffer[player_y][player_x][1] = 255;
-    checkerboard_buffer[player_y][player_x][2] = 0;
-    checkerboard_buffer[player_y][player_x][3] = 255;
+    screen_buffer[player_y][player_x][0] = 255;
+    screen_buffer[player_y][player_x][1] = 255;
+    screen_buffer[player_y][player_x][2] = 0;
+    screen_buffer[player_y][player_x][3] = 255;
 
-    return @ptrCast(&checkerboard_buffer);
+    return @ptrCast(&screen_buffer);
 }

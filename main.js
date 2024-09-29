@@ -6,21 +6,22 @@ const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v
 const wasm_exports = asdf.instance.exports;
 const wasm_memory = new Uint8Array(wasm_exports.memory.buffer);
 
-// Automatically set canvas size as defined in `checkerboard.zig`
-const checkerboardSize = wasm_exports.getCheckerboardSize();
-canvas.width = checkerboardSize;
-canvas.height = checkerboardSize;
+const screen_size = wasm_exports.getScreenSide();
+canvas.width = screen_size;
+canvas.height = screen_size;
 
-// We want to find the biggest scaling possible
-//  that is small enough to fit in the actual screen
-const SCALING_FACTOR = Math.min(
-    Math.floor(container.clientWidth / canvas.width),
-    Math.floor(container.clientHeight / canvas.height)
-);
+document.addEventListener('resize', _ => {
+    // We want to find the biggest scaling possible
+    //  that is small enough to fit in the actual screen
+    const SCALING_FACTOR = Math.min(
+        Math.floor(container.clientWidth / canvas.width),
+        Math.floor(container.clientHeight / canvas.height)
+    );
 
-// Set the html canvas size using CSS
-canvas.style.width = `${canvas.width * SCALING_FACTOR}px`;
-canvas.style.height = `${canvas.height * SCALING_FACTOR}px`;
+    // Set the html canvas size using CSS
+    canvas.style.width = `${canvas.width * SCALING_FACTOR}px`;
+    canvas.style.height = `${canvas.height * SCALING_FACTOR}px`;
+});
 
 const ctx = canvas.getContext("2d");
 const ctx_data = ctx.createImageData(canvas.width, canvas.height);
@@ -35,7 +36,7 @@ function every_frame(cur_timestamp_millis) {
     const buffer_offset = wasm_exports.draw();
     ctx_data.data.set(wasm_memory.slice(
         buffer_offset,
-        buffer_offset + checkerboardSize * checkerboardSize * 4
+        buffer_offset + screen_size * screen_size * 4
     ));
     ctx.putImageData(ctx_data, 0, 0);
 
