@@ -7,18 +7,43 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const screen_side: usize = 128;
+const SCREEN_SIDE: usize = 128;
 
 var screen_buffer = std.mem.zeroes(
-    [screen_side][screen_side][4]u8,
+    [SCREEN_SIDE][SCREEN_SIDE][4]u8,
 );
 
 export fn getScreenSide() usize {
-    return screen_side;
+    return SCREEN_SIDE;
 }
 
-var player_x: usize = screen_side / 2;
-var player_y: usize = screen_side / 2;
+var player_x: usize = SCREEN_SIDE / 2;
+var player_y: usize = SCREEN_SIDE / 2;
+
+const Vec2i = struct {
+    i: usize,
+    j: usize,
+};
+
+const Color = struct {
+    r: u8,
+    g: u8,
+    b: u8,
+};
+
+const TILE_SIDE = SCREEN_SIDE / 16;
+
+fn fillTile(tile: Vec2i, color: Color) void {
+    for (0..TILE_SIDE) |y| {
+        for (0..TILE_SIDE) |x| {
+            const asdf = &screen_buffer[y + tile.j * TILE_SIDE][x + tile.i * TILE_SIDE];
+            asdf[0] = color.r;
+            asdf[1] = color.g;
+            asdf[2] = color.b;
+            asdf[3] = 255;
+        }
+    }
+}
 
 export fn keydown(code: u32) void {
     switch (code) {
@@ -73,6 +98,9 @@ export fn draw() [*]u8 {
     screen_buffer[player_y][player_x][1] = 255;
     screen_buffer[player_y][player_x][2] = 0;
     screen_buffer[player_y][player_x][3] = 255;
+
+    fillTile(.{ .i = 1, .j = 2 }, .{ .r = 255, .g = 128, .b = 0 });
+    fillTile(.{ .i = 2, .j = 3 }, .{ .r = 255, .g = 128, .b = 0 });
 
     return @ptrCast(&screen_buffer);
 }
