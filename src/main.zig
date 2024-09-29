@@ -1,4 +1,16 @@
-extern fn consoleLog(arg: u32) void;
+const std = @import("std");
+
+pub fn main() !void {
+    buggy(2);
+}
+
+var my_global_value: Direction = undefined;
+
+export fn buggy(new_value: u32) void {
+    std.debug.print("input to fn was: {d}\n", .{new_value});
+    my_global_value = Direction.num2dir(new_value);
+    std.debug.print("global is now: {d}\n", .{Direction.dir2num(my_global_value)});
+}
 
 const Direction = enum {
     Left,
@@ -25,11 +37,3 @@ const Direction = enum {
         };
     }
 };
-
-var my_global_value: Direction = undefined;
-
-export fn buggy(new_value: u32) void {
-    consoleLog(new_value);
-    my_global_value = Direction.num2dir(new_value);
-    consoleLog(Direction.dir2num(my_global_value));
-}

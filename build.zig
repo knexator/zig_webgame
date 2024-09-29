@@ -7,7 +7,7 @@ const number_of_pages = 2;
 pub fn build(b: *std.Build) void {
     const target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
-        .os_tag = .freestanding,
+        .os_tag = .wasi,
     });
 
     const optimize: std.builtin.OptimizeMode = .ReleaseSmall;
