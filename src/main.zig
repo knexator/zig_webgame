@@ -1,4 +1,5 @@
 const std = @import("std");
+extern fn consoleLog(arg: u32) void;
 
 test "simple test" {
     var list = std.ArrayList(i32).init(std.testing.allocator);
@@ -79,7 +80,7 @@ fn reset_game() void {
         .in_dir = .Left,
         .out_dir = null,
     } };
-    next_dir = .Down;
+    next_dir = .Right;
 }
 
 fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
@@ -161,6 +162,7 @@ fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
 }
 
 export fn keydown(code: u32) void {
+    consoleLog(code);
     switch (code) {
         0 => next_dir = .Up,
         1 => next_dir = .Down,
@@ -168,8 +170,12 @@ export fn keydown(code: u32) void {
         3 => next_dir = .Right,
         else => {},
     }
-
-    // next_dir = .Right;
+    consoleLog(switch (next_dir) {
+        .Up => 0,
+        .Down => 1,
+        .Left => 2,
+        .Right => 3,
+    });
 }
 
 var game_started = false;
@@ -206,36 +212,11 @@ fn tileAt(pos: BoardPosition) *TileState {
 }
 
 export fn draw() [*]u8 {
-    const dark_value_red: u8 = 0;
-    const dark_value_green: u8 = 0;
-    const dark_value_blue: u8 = 0;
-    const light_value_red: u8 = 255;
-    const light_value_green: u8 = 255;
-    const light_value_blue: u8 = 255;
-    for (&screen_buffer, 0..) |*row, y| {
-        for (row, 0..) |*square, x| {
-            var is_dark_square = true;
-
-            if ((y % 2) == 0) {
-                is_dark_square = false;
-            }
-
-            if ((x % 2) == 0) {
-                is_dark_square = !is_dark_square;
-            }
-
-            var square_value_red = dark_value_red;
-            var square_value_green = dark_value_green;
-            var square_value_blue = dark_value_blue;
-            if (!is_dark_square) {
-                square_value_red = light_value_red;
-                square_value_green = light_value_green;
-                square_value_blue = light_value_blue;
-            }
-
-            square.*[0] = @as(u8, @intCast(@as(usize, @intFromFloat(@as(f32, @floatFromInt(x)) + global_t * 11)) % 256)) ^ @as(u8, @intCast(y % 256));
-            square.*[1] = @as(u8, @intCast(@as(usize, @intFromFloat(@as(f32, @floatFromInt(y)) + global_t * 7)) % 256)) ^ @as(u8, @intCast(x % 256));
-            square.*[2] = @intCast(x ^ y);
+    for (&screen_buffer) |*row| {
+        for (row) |*square| {
+            square.*[0] = 0;
+            square.*[1] = 0;
+            square.*[2] = 0;
             square.*[3] = 255;
         }
     }

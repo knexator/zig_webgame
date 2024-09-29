@@ -2,7 +2,11 @@ const container = document.querySelector("#canvas_container");
 const canvas = document.querySelector("#ctx_canvas");
 canvas.style.imageRendering = "pixelated";
 
-const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v0.wasm"));
+const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v0.wasm"), {
+    env: {
+        consoleLog: (arg) => console.log(arg),
+    }
+});
 const wasm_exports = asdf.instance.exports;
 const wasm_memory = new Uint8Array(wasm_exports.memory.buffer);
 
