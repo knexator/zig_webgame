@@ -46,7 +46,7 @@ const TileState = union(enum) {
     multiplier: void,
     // clock: ... TODO
     body_segment: struct {
-        visited_at: i32,
+        visited_at: usize,
         in_dir: Direction,
         out_dir: ?Direction,
     },
@@ -65,6 +65,9 @@ fn drawBoardTile(pos: Vec2i, tile: TileState) void {
 
 var player_x: usize = SCREEN_SIDE / 2;
 var player_y: usize = SCREEN_SIDE / 2;
+
+var turn: usize = 0;
+var turn_offset: f32 = 0;
 
 const Vec2i = struct {
     i: usize,
@@ -126,6 +129,18 @@ export fn frame(delta_seconds: f32) void {
         reset_game();
     }
     global_t += delta_seconds;
+
+    turn_offset += delta_seconds;
+    while (turn_offset >= 1) {
+        turn_offset -= 1;
+        turn += 1;
+
+        board_state[1][turn] = TileState{ .body_segment = .{
+            .visited_at = turn,
+            .in_dir = .Left,
+            .out_dir = null,
+        } };
+    }
 }
 
 fn reset_game() void {
