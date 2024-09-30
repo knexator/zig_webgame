@@ -6,10 +6,19 @@ pub fn main() !void {
 
 var my_global_value: Direction = undefined;
 
+// fixes:
+//  removing 'export'
+//  changing enum to enum(u32)
 export fn buggy(new_value: u32) void {
     std.debug.print("input to fn was: {d}\n", .{new_value});
     my_global_value = Direction.num2dir(new_value);
     std.debug.print("global is now: {d}\n", .{Direction.dir2num(my_global_value)});
+}
+
+test "global var bug" {
+    const new_value: u32 = 2;
+    my_global_value = Direction.num2dir(new_value);
+    try std.testing.expectEqual(2, Direction.dir2num(my_global_value));
 }
 
 const Direction = enum {
