@@ -35,7 +35,7 @@ const COLORS = struct {
 //     .BOMB = Color{ .r = 237, .g = 56, .b = 21 },
 // };
 
-const Direction = enum {
+const Direction = enum(u8) {
     Left,
     Right,
     Up,
