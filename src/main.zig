@@ -1,6 +1,13 @@
 const std = @import("std");
 extern fn consoleLog(arg: u32) void;
 
+const CircularBuffer = @import("./circular_buffer.zig").CircularBuffer;
+
+// test external stuff
+comptime {
+    _ = @import("./circular_buffer.zig");
+}
+
 test "simple test" {
     var list = std.ArrayList(i32).init(std.testing.allocator);
     defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
@@ -77,7 +84,7 @@ var turn: usize = undefined;
 var turn_offset: f32 = undefined;
 var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = undefined;
 var head_pos: BoardPosition = undefined;
-var next_dir: Direction = undefined;
+var input_buffer = CircularBuffer(Direction, 32){};
 
 fn reset_game() void {
     rnd_implementation = std.rand.DefaultPrng.init(0);
@@ -92,7 +99,7 @@ fn reset_game() void {
         .in_dir = .Left,
         .out_dir = null,
     } };
-    next_dir = .Right;
+    input_buffer.clear();
 
     for (0..3) |_| placeBomb();
 }
@@ -184,12 +191,17 @@ fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
 }
 
 export fn keydown(code: u32) void {
-    switch (code) {
-        0 => next_dir = .Up,
-        1 => next_dir = .Down,
-        2 => next_dir = .Left,
-        3 => next_dir = .Right,
-        else => {},
+    const maybe_dir: ?Direction = switch (code) {
+        0 => .Up,
+        1 => .Down,
+        2 => .Left,
+        3 => .Right,
+        else => null,
+    };
+    if (maybe_dir) |dir| {
+        input_buffer.append(dir) catch {
+            consoleLog(999); // input was lost
+        };
     }
 }
 
@@ -207,8 +219,10 @@ export fn frame(delta_seconds: f32) void {
         turn_offset -= 1;
         turn += 1;
 
+        const default_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
+        var next_dir: Direction = input_buffer.popFirst() orelse default_dir;
         if (next_dir == tileAt(head_pos).body_segment.in_dir) {
-            next_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
+            next_dir = default_dir;
         }
         const new_head_pos = head_pos.plus(next_dir);
         tileAt(head_pos).*.body_segment.out_dir = next_dir;
@@ -283,17 +297,16 @@ fn visibleWallsAt(pos: BoardPosition) u8 {
 fn findEmptySpot() BoardPosition {
     var pos: BoardPosition = undefined;
 
-    const next_head_pos = head_pos.plus(next_dir);
     while (true) {
         pos = BoardPosition{
             .i = rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE),
             .j = rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE),
         };
-        if (pos.eq(next_head_pos)) continue;
         if (switch (tileAt(pos).*) {
             .empty => false,
             else => true,
         }) continue;
+        // if (head_pos.isNextTo(pos)) continue;
 
         return pos;
     }
