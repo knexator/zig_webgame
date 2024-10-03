@@ -234,27 +234,44 @@ fn explodeBombAt(pos: BoardPosition) void {
     }
 
     // place bomb
-    const new_bomb_pos = findEmptySpot();
+    const LUCK = 5;
+    var candidates: [LUCK]BoardPosition = undefined;
+    var scores: [LUCK]u8 = undefined;
+    for (0..LUCK) |i| {
+        candidates[i] = findEmptySpot();
+        scores[i] = visibleWallsAt(candidates[i]);
+    }
+    const new_bomb_pos = candidates[std.sort.argMax(u8, &scores, {}, std.sort.asc(u8)).?];
     tileAt(new_bomb_pos).* = .{ .bomb = {} };
+}
+
+fn visibleWallsAt(pos: BoardPosition) u8 {
+    var walls: u8 = 0;
+    for (0..BOARD_SIDE) |j| {
+        for (0..BOARD_SIDE) |i| {
+            if (i == pos.i or j == pos.j) {
+                switch (tileAt(.{ .i = i, .j = j }).*) {
+                    .body_segment => {
+                        walls += 1;
+                    },
+                    else => {},
+                }
+            }
+        }
+    }
+    return walls;
 }
 
 fn findEmptySpot() BoardPosition {
     var pos: BoardPosition = undefined;
 
-    for (0..100) |_| {
-        consoleLog(rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE));
-    }
-
     const next_head_pos = head_pos.plus(next_dir);
-    _ = next_head_pos; // autofix
     while (true) {
         pos = BoardPosition{
             .i = rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE),
             .j = rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE),
         };
-        consoleLog(pos.i);
-        consoleLog(pos.j);
-        // if (pos.eq(next_head_pos)) continue;
+        if (pos.eq(next_head_pos)) continue;
         if (switch (tileAt(pos).*) {
             .empty => false,
             else => true,
