@@ -1,5 +1,7 @@
 const std = @import("std");
 extern fn consoleLog(arg: u32) void;
+extern fn fillTile_native(i: usize, j: usize, r: u8, g: u8, b: u8) void;
+extern fn fillTileWithCircle_native(i: usize, j: usize, r: u8, g: u8, b: u8) void;
 
 const CircularBuffer = @import("./circular_buffer.zig").CircularBuffer;
 
@@ -15,18 +17,7 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const SCREEN_SIDE: usize = 128;
-
-var screen_buffer = std.mem.zeroes(
-    [SCREEN_SIDE][SCREEN_SIDE][4]u8,
-);
-
-export fn getScreenSide() usize {
-    return SCREEN_SIDE;
-}
-
 const BOARD_SIDE = 16;
-const TILE_SIDE = SCREEN_SIDE / BOARD_SIDE;
 const TURN_DURATION = 0.16;
 
 const COLORS = struct {
@@ -160,34 +151,12 @@ const Color = struct {
 };
 
 fn fillTile(tile: BoardPosition, color: Color) void {
-    for (0..TILE_SIDE) |y| {
-        for (0..TILE_SIDE) |x| {
-            const asdf = &screen_buffer[y + tile.j * TILE_SIDE][x + tile.i * TILE_SIDE];
-            asdf[0] = color.r;
-            asdf[1] = color.g;
-            asdf[2] = color.b;
-            asdf[3] = 255;
-        }
-    }
+    fillTile_native(tile.i, tile.j, color.r, color.g, color.b);
 }
 
 // OPTIMIZE, maybe
 fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
-    if (TILE_SIDE % 2 != 0) @compileError("TILE_SIDE is not even");
-    for (0..TILE_SIDE) |y| {
-        for (0..TILE_SIDE) |x| {
-            const dx = @as(f32, @floatFromInt(x)) - TILE_SIDE / 2 + 0.5;
-            const dy = @as(f32, @floatFromInt(y)) - TILE_SIDE / 2 + 0.5;
-            const dd = dx * dx + dy * dy;
-            if (dd < (TILE_SIDE * TILE_SIDE) / 4) {
-                const asdf = &screen_buffer[y + tile.j * TILE_SIDE][x + tile.i * TILE_SIDE];
-                asdf[0] = color.r;
-                asdf[1] = color.g;
-                asdf[2] = color.b;
-                asdf[3] = 255;
-            }
-        }
-    }
+    fillTileWithCircle_native(tile.i, tile.j, color.r, color.g, color.b);
 }
 
 export fn keydown(code: u32) void {
@@ -316,16 +285,7 @@ fn tileAt(pos: BoardPosition) *TileState {
     return &board_state[pos.j][pos.i];
 }
 
-export fn draw() [*]u8 {
-    for (&screen_buffer) |*row| {
-        for (row) |*square| {
-            square.*[0] = 0;
-            square.*[1] = 0;
-            square.*[2] = 0;
-            square.*[3] = 255;
-        }
-    }
-
+export fn draw() void {
     for (0..BOARD_SIDE) |j| {
         for (0..BOARD_SIDE) |i| {
             fillTile(.{ .i = i, .j = j }, if ((i + j) % 2 == 0)
@@ -342,6 +302,4 @@ export fn draw() [*]u8 {
             drawBoardTile(.{ .i = i, .j = j }, board_tile);
         }
     }
-
-    return @ptrCast(&screen_buffer);
 }
