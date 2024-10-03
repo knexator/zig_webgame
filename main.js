@@ -50,6 +50,7 @@ function every_frame(cur_timestamp_millis) {
 requestAnimationFrame(every_frame);
 
 document.addEventListener("keydown", ev => {
+    if (ev.repeat) return;
     switch (ev.code) {
         case 'KeyW':
             wasm_exports.keydown(0);

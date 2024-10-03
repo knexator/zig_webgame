@@ -13,7 +13,7 @@ pub fn CircularBuffer(comptime T: type, comptime buffer_size: usize) type {
                 return error.circular_buffer_oom;
             }
             self.buffer[self.primer_hueco] = element;
-            self.primer_hueco += 1;
+            self.primer_hueco = (self.primer_hueco + 1) % buffer_size;
         }
 
         pub fn popFirst(self: *Self) ?T {
@@ -49,4 +49,19 @@ test "oom error" {
         try my_buffer.append(1);
     }
     try std.testing.expectError(error.circular_buffer_oom, my_buffer.append(1));
+}
+
+test "circularity" {
+    var my_buffer = CircularBuffer(u8, 5){};
+    try my_buffer.append(0);
+    try my_buffer.append(0);
+
+    for (0..100) |_| {
+        try my_buffer.append(0);
+        _ = my_buffer.popFirst().?;
+    }
+
+    _ = my_buffer.popFirst().?;
+    _ = my_buffer.popFirst().?;
+    try std.testing.expectEqual(null, my_buffer.popFirst());
 }

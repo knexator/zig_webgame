@@ -221,8 +221,8 @@ export fn frame(delta_seconds: f32) void {
 
         const default_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
         var next_dir: Direction = input_buffer.popFirst() orelse default_dir;
-        if (next_dir == tileAt(head_pos).body_segment.in_dir) {
-            next_dir = default_dir;
+        while (next_dir == Direction.opposite(default_dir)) {
+            next_dir = input_buffer.popFirst() orelse default_dir;
         }
         const new_head_pos = head_pos.plus(next_dir);
         tileAt(head_pos).*.body_segment.out_dir = next_dir;
