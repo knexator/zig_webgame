@@ -26,6 +26,14 @@ const COLORS = struct {
     BOMB: Color = .{ .r = 237, .g = 56, .b = 21 },
     SNAKE: struct {
         HEAD: Color = Color{ .r = 133, .g = 206, .b = 54 },
+        BODY1: Color = Color{ .r = 128, .g = 197, .b = 53 },
+        BODY2: Color = Color{ .r = 106, .g = 163, .b = 44 },
+        SCARF: Color = Color{ .r = 86, .g = 126, .b = 42 },
+    } = .{},
+    BACKGROUND: struct {
+        MAIN: Color = Color{ .r = 33, .g = 54, .b = 54 },
+        DIAG1: Color = Color{ .r = 32, .g = 60, .b = 60 },
+        DIAG2: Color = Color{ .r = 37, .g = 61, .b = 61 },
     } = .{},
 }{};
 
@@ -91,7 +99,11 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
     switch (tile) {
         .empty => {},
         .bomb => fillTileWithCircle(pos, COLORS.BOMB),
-        .body_segment => fillTile(pos, COLORS.SNAKE.HEAD),
+        .body_segment => |body| fillTile(pos, if (body.out_dir == null)
+            COLORS.SNAKE.HEAD
+        else if (body.visited_at + 1 == turn)
+            COLORS.SNAKE.SCARF
+        else if ((pos.i + pos.j) % 2 == 0) COLORS.SNAKE.BODY1 else COLORS.SNAKE.BODY2),
         else => {},
     }
 }
@@ -295,8 +307,16 @@ export fn draw() [*]u8 {
         }
     }
 
-    fillTile(.{ .i = 1, .j = 2 }, .{ .r = 255, .g = 128, .b = 0 });
-    fillTile(.{ .i = 2, .j = 3 }, .{ .r = 255, .g = 128, .b = 0 });
+    for (0..BOARD_SIDE) |j| {
+        for (0..BOARD_SIDE) |i| {
+            fillTile(.{ .i = i, .j = j }, if ((i + j) % 2 == 0)
+                COLORS.BACKGROUND.MAIN
+            else if ((i + j + 1) % 4 == 0)
+                COLORS.BACKGROUND.DIAG1
+            else
+                COLORS.BACKGROUND.DIAG2);
+        }
+    }
 
     for (board_state, 0..) |board_row, j| {
         for (board_row, 0..) |board_tile, i| {
