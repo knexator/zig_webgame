@@ -68,6 +68,8 @@ var head_pos: BoardPosition = undefined;
 var turn: usize = undefined;
 var turn_offset: f32 = undefined;
 var next_dir: Direction = undefined;
+var rnd_implementation: std.rand.DefaultPrng = undefined;
+var rnd: std.rand.Random = undefined;
 
 fn reset_game() void {
     turn = 0;
@@ -81,6 +83,8 @@ fn reset_game() void {
         .out_dir = null,
     } };
     next_dir = .Right;
+    rnd_implementation = std.rand.DefaultPrng.init(0);
+    rnd = rnd_implementation.random();
 }
 
 fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
@@ -97,6 +101,10 @@ const BoardPosition = struct {
 
     i: usize,
     j: usize,
+
+    fn eq(a: Self, b: Self) bool {
+        return a.i == b.i and a.j == b.j;
+    }
 
     fn plus(vec: Self, dir: Direction) Self {
         return switch (dir) {
@@ -162,7 +170,6 @@ fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
 }
 
 export fn keydown(code: u32) void {
-    consoleLog(code);
     switch (code) {
         0 => next_dir = .Up,
         1 => next_dir = .Down,
@@ -170,12 +177,6 @@ export fn keydown(code: u32) void {
         3 => next_dir = .Right,
         else => {},
     }
-    consoleLog(switch (next_dir) {
-        .Up => 0,
-        .Down => 1,
-        .Left => 2,
-        .Right => 3,
-    });
 }
 
 var game_started = false;
@@ -192,11 +193,20 @@ export fn frame(delta_seconds: f32) void {
         turn_offset -= 1;
         turn += 1;
 
-        // if (next_dir == tileAt(head_pos).body_segment.in_dir) {
-        //     next_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
-        // }
+        if (next_dir == tileAt(head_pos).body_segment.in_dir) {
+            next_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
+        }
         const new_head_pos = head_pos.plus(next_dir);
         tileAt(head_pos).*.body_segment.out_dir = next_dir;
+
+        switch (tileAt(new_head_pos).*) {
+            .body_segment => {
+                reset_game();
+                return;
+            },
+            .bomb => explodeBombAt(new_head_pos),
+            else => {},
+        }
 
         tileAt(new_head_pos).* = TileState{ .body_segment = .{
             .visited_at = turn,
@@ -204,6 +214,53 @@ export fn frame(delta_seconds: f32) void {
             .out_dir = null,
         } };
         head_pos = new_head_pos;
+    }
+}
+
+fn explodeBombAt(pos: BoardPosition) void {
+    // erase body segments
+    for (0..BOARD_SIDE) |j| {
+        for (0..BOARD_SIDE) |i| {
+            if (i == pos.i or j == pos.j) {
+                const cur_pos = BoardPosition{ .i = i, .j = j };
+                switch (tileAt(cur_pos).*) {
+                    .body_segment => {
+                        tileAt(cur_pos).* = .{ .empty = {} };
+                    },
+                    else => {},
+                }
+            }
+        }
+    }
+
+    // place bomb
+    const new_bomb_pos = findEmptySpot();
+    tileAt(new_bomb_pos).* = .{ .bomb = {} };
+}
+
+fn findEmptySpot() BoardPosition {
+    var pos: BoardPosition = undefined;
+
+    for (0..100) |_| {
+        consoleLog(rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE));
+    }
+
+    const next_head_pos = head_pos.plus(next_dir);
+    _ = next_head_pos; // autofix
+    while (true) {
+        pos = BoardPosition{
+            .i = rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE),
+            .j = rnd.intRangeLessThanBiased(usize, 0, BOARD_SIDE),
+        };
+        consoleLog(pos.i);
+        consoleLog(pos.j);
+        // if (pos.eq(next_head_pos)) continue;
+        if (switch (tileAt(pos).*) {
+            .empty => false,
+            else => true,
+        }) continue;
+
+        return pos;
     }
 }
 
