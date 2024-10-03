@@ -71,19 +71,21 @@ const TileState = union(enum) {
     },
 };
 
-var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = undefined;
-var head_pos: BoardPosition = undefined;
-var turn: usize = undefined;
-var turn_offset: f32 = undefined;
-var next_dir: Direction = undefined;
 var rnd_implementation: std.rand.DefaultPrng = undefined;
 var rnd: std.rand.Random = undefined;
+var turn: usize = undefined;
+var turn_offset: f32 = undefined;
+var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = undefined;
+var head_pos: BoardPosition = undefined;
+var next_dir: Direction = undefined;
 
 fn reset_game() void {
+    rnd_implementation = std.rand.DefaultPrng.init(0);
+    rnd = rnd_implementation.random();
+
     turn = 0;
     turn_offset = 0;
     board_state = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
-    board_state[0][0] = .bomb;
     head_pos = BoardPosition{ .i = 0, .j = 1 };
     tileAt(head_pos).* = TileState{ .body_segment = .{
         .visited_at = turn,
@@ -91,8 +93,8 @@ fn reset_game() void {
         .out_dir = null,
     } };
     next_dir = .Right;
-    rnd_implementation = std.rand.DefaultPrng.init(0);
-    rnd = rnd_implementation.random();
+
+    for (0..3) |_| placeBomb();
 }
 
 fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
@@ -245,6 +247,10 @@ fn explodeBombAt(pos: BoardPosition) void {
         }
     }
 
+    placeBomb();
+}
+
+fn placeBomb() void {
     // place bomb
     const LUCK = 5;
     var candidates: [LUCK]BoardPosition = undefined;
