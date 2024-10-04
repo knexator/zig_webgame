@@ -19,11 +19,39 @@ function fillTileWithCircle(i, j, r, g, b) {
     ctx.fill();
 }
 
+function drawSnakeCorner(i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
+    ctx.fillStyle = rgbToHex(r,g,b);
+    ctx.beginPath();
+    const cx = (i + .5) * TILE_SIZE;
+    const cy = (j + .5) * TILE_SIZE;
+    const dxA = di_in * TILE_SIZE / 2;
+    const dyA = dj_in * TILE_SIZE / 2;
+    const dxB = di_out * TILE_SIZE / 2;
+    const dyB = dj_out * TILE_SIZE / 2;
+    ctx.moveTo(cx - dxB, cy - dyB);
+    ctx.lineTo(cx - dxB + dxA, cy - dyB + dyA);
+    ctx.lineTo(cx + dxB + dxA, cy + dyB + dyA);
+    ctx.lineTo(cx + dxB - dxA, cy + dyB - dyA);
+    ctx.lineTo(cx - dxA, cy - dyA);
+    ctx.arc(cx, cy, TILE_SIZE / 2, atan2(-dyA, -dxA), atan2(-dyB, -dxB), dxA * dyB - dyA * dxB < 0);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function atan2(dy, dx) {
+    if (dx > 0) return 0;
+    if (dx < 0) return Math.PI;
+    if (dy > 0) return Math.PI / 2;
+    if (dy < 0) return -Math.PI / 2;
+    return 0;
+}
+
 const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v0.wasm"), {
     env: {
         consoleLog: (arg) => console.log(arg),
         fillTile_native: fillTile,
         fillTileWithCircle_native: fillTileWithCircle,
+        drawSnakeCorner_native: drawSnakeCorner,
     }
 });
 const wasm_exports = asdf.instance.exports;

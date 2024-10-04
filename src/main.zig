@@ -2,6 +2,7 @@ const std = @import("std");
 extern fn consoleLog(arg: u32) void;
 extern fn fillTile_native(i: usize, j: usize, r: u8, g: u8, b: u8) void;
 extern fn fillTileWithCircle_native(i: usize, j: usize, r: u8, g: u8, b: u8) void;
+extern fn drawSnakeCorner_native(i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) void;
 
 const CircularBuffer = @import("./circular_buffer.zig").CircularBuffer;
 
@@ -50,18 +51,35 @@ const Direction = enum(u8) {
             .Up => .Down,
         };
     }
+
+    fn di(d: Direction) i8 {
+        return switch (d) {
+            .Left => -1,
+            .Right => 1,
+            .Up, .Down => 0,
+        };
+    }
+
+    fn dj(d: Direction) i8 {
+        return switch (d) {
+            .Down => 1,
+            .Up => -1,
+            .Left, .Right => 0,
+        };
+    }
 };
 
+const SnakeSegment = struct {
+    visited_at: usize,
+    in_dir: Direction,
+    out_dir: ?Direction,
+};
 const TileState = union(enum) {
     empty: void,
     bomb: void,
     multiplier: void,
     // clock: ... TODO
-    body_segment: struct {
-        visited_at: usize,
-        in_dir: Direction,
-        out_dir: ?Direction,
-    },
+    body_segment: SnakeSegment,
 };
 
 var rnd_implementation: std.rand.DefaultPrng = undefined;
@@ -96,12 +114,23 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
     switch (tile) {
         .empty => {},
         .bomb => fillTileWithCircle(pos, COLORS.BOMB),
-        .body_segment => |body| fillTile(pos, if (body.out_dir == null)
+        .body_segment => |body| drawSnakeSegment(pos, body, if (body.out_dir == null)
             COLORS.SNAKE.HEAD
         else if (body.visited_at + 1 == turn)
             COLORS.SNAKE.SCARF
         else if ((pos.i + pos.j) % 2 == 0) COLORS.SNAKE.BODY1 else COLORS.SNAKE.BODY2),
         else => {},
+    }
+}
+
+fn drawSnakeSegment(pos: BoardPosition, body: SnakeSegment, color: Color) void {
+    if (body.out_dir == null) {
+        // TODO: rounded head
+        fillTile(pos, color);
+    } else if (body.in_dir.opposite() == body.out_dir.?) {
+        fillTile(pos, color);
+    } else {
+        drawSnakeCorner(pos, body.in_dir, body.out_dir.?, color);
     }
 }
 
@@ -151,9 +180,12 @@ fn fillTile(tile: BoardPosition, color: Color) void {
     fillTile_native(tile.i, tile.j, color.r, color.g, color.b);
 }
 
-// OPTIMIZE, maybe
 fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
     fillTileWithCircle_native(tile.i, tile.j, color.r, color.g, color.b);
+}
+
+fn drawSnakeCorner(tile: BoardPosition, dir_in: Direction, dir_out: Direction, color: Color) void {
+    drawSnakeCorner_native(tile.i, tile.j, dir_in.di(), dir_in.dj(), dir_out.di(), dir_out.dj(), color.r, color.g, color.b);
 }
 
 export fn keydown(code: u32) void {
