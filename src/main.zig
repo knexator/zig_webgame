@@ -22,6 +22,7 @@ const TURN_DURATION = 0.16;
 
 const COLORS = struct {
     BOMB: Color = .{ .r = 237, .g = 56, .b = 21 },
+    EXPLOSION: Color = .{ .r = 255, .g = 205, .b = 117 },
     SNAKE: struct {
         HEAD: Color = Color{ .r = 133, .g = 206, .b = 54 },
         BODY1: Color = Color{ .r = 128, .g = 197, .b = 53 },
@@ -34,12 +35,6 @@ const COLORS = struct {
         DIAG2: Color = Color{ .r = 37, .g = 61, .b = 61 },
     } = .{},
 }{};
-
-// const COLORS = struct {
-//     BOMB: Color,
-// }{
-//     .BOMB = Color{ .r = 237, .g = 56, .b = 21 },
-// };
 
 const Direction = enum(u8) {
     Left,
@@ -76,6 +71,7 @@ var turn_offset: f32 = undefined;
 var board_state: [BOARD_SIDE][BOARD_SIDE]TileState = undefined;
 var head_pos: BoardPosition = undefined;
 var input_buffer = CircularBuffer(Direction, 32){};
+var cur_explosion_particle: ?BoardPosition = undefined;
 
 fn reset_game() void {
     rnd_implementation = std.rand.DefaultPrng.init(0);
@@ -91,6 +87,7 @@ fn reset_game() void {
         .out_dir = null,
     } };
     input_buffer.clear();
+    cur_explosion_particle = null;
 
     for (0..3) |_| placeBomb();
 }
@@ -187,6 +184,7 @@ export fn frame(delta_seconds: f32) void {
     while (turn_offset >= 1) {
         turn_offset -= 1;
         turn += 1;
+        cur_explosion_particle = null;
 
         const default_dir = Direction.opposite(tileAt(head_pos).body_segment.in_dir);
         var next_dir: Direction = input_buffer.popFirst() orelse default_dir;
@@ -229,6 +227,8 @@ fn explodeBombAt(pos: BoardPosition) void {
             }
         }
     }
+
+    cur_explosion_particle = pos;
 
     placeBomb();
 }
@@ -294,6 +294,16 @@ export fn draw() void {
                 COLORS.BACKGROUND.DIAG1
             else
                 COLORS.BACKGROUND.DIAG2);
+        }
+    }
+
+    if (cur_explosion_particle) |explosion_pos| {
+        for (0..BOARD_SIDE) |j| {
+            for (0..BOARD_SIDE) |i| {
+                if (i == explosion_pos.i or j == explosion_pos.j) {
+                    fillTile(.{ .i = i, .j = j }, COLORS.EXPLOSION);
+                }
+            }
         }
     }
 

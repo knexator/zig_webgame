@@ -5,7 +5,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
-let TILE_SIZE = canvas.width / 16;
+let TILE_SIZE = Math.round(canvas.width / 16);
 
 function fillTile(i, j, r, g, b) {
     ctx.fillStyle = rgbToHex(r,g,b);
