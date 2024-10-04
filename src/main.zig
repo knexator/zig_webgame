@@ -126,7 +126,6 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
 
 fn drawSnakeSegment(pos: BoardPosition, body: SnakeSegment, color: Color) void {
     if (body.out_dir == null) {
-        // TODO: rounded head
         drawSnakeHead(pos, body.in_dir, color);
     } else if (body.in_dir.opposite() == body.out_dir.?) {
         fillTile(pos, color);
