@@ -38,6 +38,24 @@ function drawSnakeCorner(i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
     ctx.fill();
 }
 
+function drawSnakeHead(i, j, di_in, dj_in, r, g, b) {
+    ctx.fillStyle = rgbToHex(r,g,b);
+    ctx.beginPath();
+    const cx = (i + .5) * TILE_SIZE;
+    const cy = (j + .5) * TILE_SIZE;
+    const dxA = di_in * TILE_SIZE / 2;
+    const dyA = dj_in * TILE_SIZE / 2;
+    const dxB = -dyA;
+    const dyB = dxA;
+    ctx.moveTo(cx - dxB, cy - dyB);
+    ctx.lineTo(cx - dxB + dxA, cy - dyB + dyA);
+    ctx.lineTo(cx + dxB + dxA, cy + dyB + dyA);
+    ctx.lineTo(cx + dxB, cy + dyB);
+    ctx.arc(cx, cy, TILE_SIZE / 2, atan2(-dyB, -dxB), atan2(dyB, dxB), true);
+    ctx.closePath();
+    ctx.fill();
+}
+
 function atan2(dy, dx) {
     if (dx > 0) return 0;
     if (dx < 0) return Math.PI;
@@ -52,6 +70,7 @@ const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v
         fillTile_native: fillTile,
         fillTileWithCircle_native: fillTileWithCircle,
         drawSnakeCorner_native: drawSnakeCorner,
+        drawSnakeHead_native: drawSnakeHead,
     }
 });
 const wasm_exports = asdf.instance.exports;
