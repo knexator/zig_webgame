@@ -71,6 +71,7 @@ const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v
         fillTileWithCircle_native: fillTileWithCircle,
         drawSnakeCorner_native: drawSnakeCorner,
         drawSnakeHead_native: drawSnakeHead,
+        drawSnakeHead_float_native: drawSnakeHead,
     }
 });
 const wasm_exports = asdf.instance.exports;
@@ -89,6 +90,8 @@ let last_timestamp_millis = 0;
 function every_frame(cur_timestamp_millis) {
     const delta_seconds = (cur_timestamp_millis - last_timestamp_millis) / 1000;
     last_timestamp_millis = cur_timestamp_millis;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     wasm_exports.frame(delta_seconds);
     wasm_exports.draw();
