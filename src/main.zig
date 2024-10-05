@@ -7,6 +7,8 @@ extern fn drawSnakeCorner_native(i: usize, j: usize, di_in: i8, dj_in: i8, di_ou
 extern fn drawSnakeCorner_float_native(i: f32, j: f32, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) void;
 extern fn drawSnakeHead_native(i: usize, j: usize, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) void;
 extern fn drawSnakeHead_float_native(i: f32, j: f32, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) void;
+extern fn drawSnakeScarf_first_native(t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) void;
+extern fn drawSnakeScarf_last_native(t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) void;
 
 const CircularBuffer = @import("./circular_buffer.zig").CircularBuffer;
 
@@ -22,10 +24,10 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const DEBUG_ANIM = false;
+const DEBUG_ANIM = true;
 
 const BOARD_SIDE = 16;
-const TURN_DURATION = if (DEBUG_ANIM) 0.46 else 0.16;
+const TURN_DURATION = if (DEBUG_ANIM) 2.0 else 0.16;
 const ANIM_PERC = if (DEBUG_ANIM) 0.95 else 0.2;
 
 const COLORS = struct {
@@ -138,25 +140,24 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
     }
 }
 
-// TODO: better
 fn drawSnakeHeadAndScarf() void {
     const in_dir = tileAt(head_pos).body_segment.in_dir;
 
     if (cur_explosion_particle == null) {
         const scarf_pos = head_pos.plus(in_dir);
         const scarf = tileAt(scarf_pos).body_segment;
+        const color = COLORS.SNAKE.SCARF;
         if (turn_offset < ANIM_PERC) {
-            if (scarf.in_dir.opposite() == scarf.out_dir.?) {
-                fillTile_float(scarf_pos.plus_fractional(scarf.in_dir, 1 - turn_offset / ANIM_PERC), COLORS.SNAKE.SCARF);
-            } else {
-                drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, COLORS.SNAKE.SCARF);
-                fillTile_float(scarf_pos.plus_fractional(scarf.in_dir, 1 - turn_offset / ANIM_PERC), COLORS.SNAKE.SCARF);
-            }
+            drawSnakeScarf_first_native(turn_offset / ANIM_PERC, scarf_pos.i, scarf_pos.j, scarf.in_dir.di(), scarf.in_dir.dj(), scarf.out_dir.?.di(), scarf.out_dir.?.dj(), color.r, color.g, color.b);
+
+            const prev_scarf_pos = scarf_pos.plus(scarf.in_dir);
+            const prev_scarf = tileAt(prev_scarf_pos).body_segment;
+            drawSnakeScarf_last_native(turn_offset / ANIM_PERC, prev_scarf_pos.i, prev_scarf_pos.j, prev_scarf.in_dir.di(), prev_scarf.in_dir.dj(), prev_scarf.out_dir.?.di(), prev_scarf.out_dir.?.dj(), color.r, color.g, color.b);
         } else {
             if (scarf.in_dir.opposite() == scarf.out_dir.?) {
-                fillTile(scarf_pos, COLORS.SNAKE.SCARF);
+                fillTile(scarf_pos, color);
             } else {
-                drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, COLORS.SNAKE.SCARF);
+                drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, color);
             }
         }
     }

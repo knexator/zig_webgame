@@ -19,25 +19,61 @@ function fillTileWithCircle(i, j, r, g, b) {
     ctx.fill();
 }
 
-function drawSnakeCorner(i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
-    ctx.fillStyle = rgbToHex(r,g,b);
-    ctx.beginPath();
+function pathSnakeSegment(i, j, di_in, dj_in, di_out, dj_out) {
+    if (di_in == -di_out && dj_in == -dj_out) {
+        return pathTile(i, j);
+    } else {
+        return pathSnakeCorner(i, j, di_in, dj_in, di_out, dj_out);
+    }
+}
+
+function pathTile(i, j) {
+    let region = new Path2D();
+    region.rect(i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    return region;
+}
+
+function pathSnakeCorner(i, j, di_in, dj_in, di_out, dj_out) {
+    let region = new Path2D();
+    // region.beginPath();
     const cx = (i + .5) * TILE_SIZE;
     const cy = (j + .5) * TILE_SIZE;
     const dxA = di_in * TILE_SIZE / 2;
     const dyA = dj_in * TILE_SIZE / 2;
     const dxB = di_out * TILE_SIZE / 2;
     const dyB = dj_out * TILE_SIZE / 2;
-    ctx.moveTo(cx - dxB, cy - dyB);
-    ctx.lineTo(cx - dxB + dxA, cy - dyB + dyA);
-    ctx.lineTo(cx + dxB + dxA, cy + dyB + dyA);
-    ctx.lineTo(cx + dxB - dxA, cy + dyB - dyA);
-    ctx.lineTo(cx - dxA, cy - dyA);
-    ctx.arc(cx, cy, TILE_SIZE / 2, atan2(-dyA, -dxA), atan2(-dyB, -dxB), dxA * dyB - dyA * dxB < 0);
-    ctx.closePath();
-    ctx.fill();
+    region.moveTo(cx - dxB, cy - dyB);
+    region.lineTo(cx - dxB + dxA, cy - dyB + dyA);
+    region.lineTo(cx + dxB + dxA, cy + dyB + dyA);
+    region.lineTo(cx + dxB - dxA, cy + dyB - dyA);
+    region.lineTo(cx - dxA, cy - dyA);
+    region.arc(cx, cy, TILE_SIZE / 2, atan2(-dyA, -dxA), atan2(-dyB, -dxB), dxA * dyB - dyA * dxB < 0);
+    region.closePath();
+    return region;
 }
 
+function drawSnakeCorner(i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
+    ctx.fillStyle = rgbToHex(r,g,b);
+    ctx.fill(pathSnakeCorner(i, j, di_in, dj_in, di_out, dj_out));
+}
+
+function drawSnakeScarf_first(t, i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
+    t = Math.max(t, .25); // hack
+    ctx.save();
+    ctx.clip(pathSnakeSegment(i, j, di_in, dj_in, di_out, dj_out));
+    fillTile(i + di_in * (1-t), j + dj_in * (1-t), r, g, b);
+    fillTile(i - di_out * (1-t), j - dj_out * (1-t), r, g, b);
+    ctx.restore();
+}
+
+function drawSnakeScarf_last(t, i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
+    ctx.save();
+    ctx.clip(pathSnakeSegment(i, j, di_in, dj_in, di_out, dj_out));
+    fillTile(i + di_out * t, j + dj_out * t, r, g, b);
+    ctx.restore();
+}
+
+// TODO: avoid corner
 function drawSnakeHead(i, j, di_in, dj_in, r, g, b) {
     ctx.fillStyle = rgbToHex(r,g,b);
     ctx.beginPath();
@@ -74,6 +110,8 @@ const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v
         drawSnakeCorner_float_native: drawSnakeCorner,
         drawSnakeHead_native: drawSnakeHead,
         drawSnakeHead_float_native: drawSnakeHead,
+        drawSnakeScarf_first_native: drawSnakeScarf_first,
+        drawSnakeScarf_last_native: drawSnakeScarf_last,
     }
 });
 const wasm_exports = asdf.instance.exports;
