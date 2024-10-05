@@ -58,7 +58,7 @@ function drawSnakeCorner(i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
 }
 
 function drawSnakeScarf_first(t, i, j, di_in, dj_in, di_out, dj_out, r, g, b) {
-    t = Math.max(t, .25); // hack
+    t = Math.max(t, .5); // hack
     ctx.save();
     ctx.clip(pathSnakeSegment(i, j, di_in, dj_in, di_out, dj_out));
     fillTile(i + di_in * (1-t), j + dj_in * (1-t), r, g, b);
