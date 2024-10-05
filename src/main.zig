@@ -24,7 +24,7 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
-const DEBUG_ANIM = true;
+const DEBUG_ANIM = false;
 
 const BOARD_SIDE = 16;
 const TURN_DURATION = if (DEBUG_ANIM) 2.0 else 0.16;
