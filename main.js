@@ -68,8 +68,10 @@ const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v
     env: {
         consoleLog: (arg) => console.log(arg),
         fillTile_native: fillTile,
+        fillTile_float_native: fillTile,
         fillTileWithCircle_native: fillTileWithCircle,
         drawSnakeCorner_native: drawSnakeCorner,
+        drawSnakeCorner_float_native: drawSnakeCorner,
         drawSnakeHead_native: drawSnakeHead,
         drawSnakeHead_float_native: drawSnakeHead,
     }

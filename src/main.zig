@@ -1,8 +1,10 @@
 const std = @import("std");
 extern fn consoleLog(arg: u32) void;
 extern fn fillTile_native(i: usize, j: usize, r: u8, g: u8, b: u8) void;
+extern fn fillTile_float_native(i: f32, j: f32, r: u8, g: u8, b: u8) void;
 extern fn fillTileWithCircle_native(i: usize, j: usize, r: u8, g: u8, b: u8) void;
 extern fn drawSnakeCorner_native(i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) void;
+extern fn drawSnakeCorner_float_native(i: f32, j: f32, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) void;
 extern fn drawSnakeHead_native(i: usize, j: usize, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) void;
 extern fn drawSnakeHead_float_native(i: f32, j: f32, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) void;
 
@@ -20,9 +22,11 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
+const DEBUG_ANIM = false;
+
 const BOARD_SIDE = 16;
-const TURN_DURATION = 0.16;
-const ANIM_PERC = 0.2;
+const TURN_DURATION = if (DEBUG_ANIM) 0.46 else 0.16;
+const ANIM_PERC = if (DEBUG_ANIM) 0.95 else 0.2;
 
 const COLORS = struct {
     BOMB: Color = .{ .r = 237, .g = 56, .b = 21 },
@@ -98,10 +102,15 @@ fn reset_game() void {
     rnd_implementation = std.rand.DefaultPrng.init(0);
     rnd = rnd_implementation.random();
 
-    turn = 0;
+    turn = 1;
     turn_offset = 0;
     board_state = .{.{TileState.empty} ** BOARD_SIDE} ** BOARD_SIDE;
-    head_pos = BoardPosition{ .i = 0, .j = 1 };
+    head_pos = BoardPosition{ .i = 1, .j = 1 };
+    tileAt(head_pos.plus(.Left)).* = TileState{ .body_segment = .{
+        .visited_at = turn - 1,
+        .in_dir = .Left,
+        .out_dir = .Right,
+    } };
     tileAt(head_pos).* = TileState{ .body_segment = .{
         .visited_at = turn,
         .in_dir = .Left,
@@ -120,8 +129,7 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
         .body_segment => |body| if (body.visited_at == turn) {
             // head: drawn later
         } else if (body.visited_at + 1 == turn) {
-            // scarf
-            drawSnakeSegment(pos, body, COLORS.SNAKE.SCARF);
+            // scarf: drawn later
         } else {
             // body
             drawSnakeSegment(pos, body, if ((pos.i + pos.j) % 2 == 0) COLORS.SNAKE.BODY1 else COLORS.SNAKE.BODY2);
@@ -130,11 +138,32 @@ fn drawBoardTile(pos: BoardPosition, tile: TileState) void {
     }
 }
 
-fn drawSnakeHeadMain() void {
+// TODO: better
+fn drawSnakeHeadAndScarf() void {
     const in_dir = tileAt(head_pos).body_segment.in_dir;
+
+    if (cur_explosion_particle == null) {
+        const scarf_pos = head_pos.plus(in_dir);
+        const scarf = tileAt(scarf_pos).body_segment;
+        if (turn_offset < ANIM_PERC) {
+            if (scarf.in_dir.opposite() == scarf.out_dir.?) {
+                fillTile_float(scarf_pos.plus_fractional(scarf.in_dir, 1 - turn_offset / ANIM_PERC), COLORS.SNAKE.SCARF);
+            } else {
+                drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, COLORS.SNAKE.SCARF);
+                fillTile_float(scarf_pos.plus_fractional(scarf.in_dir, 1 - turn_offset / ANIM_PERC), COLORS.SNAKE.SCARF);
+            }
+        } else {
+            if (scarf.in_dir.opposite() == scarf.out_dir.?) {
+                fillTile(scarf_pos, COLORS.SNAKE.SCARF);
+            } else {
+                drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, COLORS.SNAKE.SCARF);
+            }
+        }
+    }
+
     if (turn_offset < ANIM_PERC) {
         const color = COLORS.SNAKE.HEAD;
-        const lerped_pos = head_pos.plus_fractional(in_dir, 1.0 - turn_offset / ANIM_PERC);
+        const lerped_pos = head_pos.plus_fractional(in_dir, 1.0 - (turn_offset / ANIM_PERC));
         drawSnakeHead_float_native(lerped_pos.i, lerped_pos.j, in_dir.di(), in_dir.dj(), color.r, color.g, color.b);
     } else {
         drawSnakeHead(head_pos, in_dir, COLORS.SNAKE.HEAD);
@@ -209,6 +238,10 @@ const Color = struct {
 
 fn fillTile(tile: BoardPosition, color: Color) void {
     fillTile_native(tile.i, tile.j, color.r, color.g, color.b);
+}
+
+fn fillTile_float(tile: BoardPositionFractional, color: Color) void {
+    fillTile_float_native(tile.i, tile.j, color.r, color.g, color.b);
 }
 
 fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
@@ -380,5 +413,5 @@ export fn draw() void {
         }
     }
 
-    drawSnakeHeadMain();
+    drawSnakeHeadAndScarf();
 }
