@@ -2,18 +2,22 @@ const std = @import("std");
 
 const mime = @import("mime");
 
+// TODO: steal a lot of ideas from https://github.com/ziglang/zig/blob/master/lib/compiler/std-docs.zig
+
 pub fn main() !void {
     const addr = try std.net.Address.parseIp("127.0.0.1", 8001);
     var http_server = try addr.listen(.{ .reuse_address = true });
 
-    const cwd = std.fs.cwd();
-
-    var sfsfsfpath: [std.fs.max_path_bytes]u8 = undefined;
-    const fullpath = try std.fs.realpath(".", &sfsfsfpath);
-    std.debug.print("cwd: {s}\n", .{fullpath});
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
+
+    var args = try std.process.argsWithAllocator(gpa.allocator());
+    defer args.deinit();
+    std.debug.assert(args.skip());
+    const static_dir_name = args.next().?;
+    std.debug.assert(!args.skip());
+
+    const static_dir = try std.fs.openDirAbsolute(static_dir_name, .{});
 
     var per_request_arena = std.heap.ArenaAllocator.init(gpa.allocator());
     defer per_request_arena.deinit();
@@ -34,7 +38,8 @@ pub fn main() !void {
 
             const file_path = if (std.mem.eql(u8, request.head.target, "/")) "/index.html" else request.head.target;
             std.debug.assert(file_path[0] == '/');
-            const cur_file = cwd.openFile(file_path[1..], .{}) catch |err| {
+
+            const cur_file = static_dir.openFile(file_path[1..], .{}) catch |err| {
                 std.log.err("could not open the request file {s} due to error {s}\n", .{ file_path, @errorName(err) });
                 try request.respond("can't find that file", .{ .status = .not_found });
                 continue :accept;

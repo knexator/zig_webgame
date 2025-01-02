@@ -100,7 +100,7 @@ function atan2(dy, dx) {
     return 0;
 }
 
-const asdf = await WebAssembly.instantiateStreaming(fetch("zig-out/bin/webgame_v0.wasm"), {
+const asdf = await WebAssembly.instantiateStreaming(fetch("webgame_v0.wasm"), {
     env: {
         consoleLog: (arg) => console.log(arg),
         fillTile_native: fillTile,

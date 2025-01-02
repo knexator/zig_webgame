@@ -26,10 +26,17 @@ pub fn build(b: *std.Build) void {
     exe.export_memory = true;
     exe.stack_size = std.wasm.page_size;
 
-    // This declares intent for the executable to be installed into the
-    // standard location when the user invokes the "install" step (the default
-    // step when running `zig build`).
-    b.installArtifact(exe);
+    const webgame_install_dir = std.Build.InstallDir{ .custom = "dist" };
+    const compile_wasm = b.addInstallArtifact(exe, .{
+        .dest_dir = .{ .override = webgame_install_dir },
+    });
+    b.getInstallStep().dependOn(&compile_wasm.step);
+    const copy_static_files = b.addInstallDirectory(.{
+        .install_dir = webgame_install_dir,
+        .install_subdir = "",
+        .source_dir = b.path("static"),
+    });
+    b.getInstallStep().dependOn(&copy_static_files.step);
 
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
@@ -59,11 +66,7 @@ pub fn build(b: *std.Build) void {
     }).module("mime"));
     const run_dev_server = b.addRunArtifact(dev_server_exe);
     run_dev_server.step.dependOn(b.getInstallStep());
-
-    // b.path(b.getInstallPath(dir: InstallDir, dest_rel_path: []const u8))
-    // run_dev_server.setCwd(cwd: Build.LazyPath)
-    // b.getInstallPath(dir: InstallDir, dest_rel_path: []const u8)
-
+    run_dev_server.addArg(b.getInstallPath(webgame_install_dir, ""));
     const run_dev_server_step = b.step("dev", "Run the dev server");
     run_dev_server_step.dependOn(&run_dev_server.step);
 }
