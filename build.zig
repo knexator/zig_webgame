@@ -4,18 +4,19 @@ const std = @import("std");
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
-    const target = b.resolveTargetQuery(.{
+    const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
         .os_tag = .freestanding,
     });
 
+    const actual_target = b.standardTargetOptions(.{});
     const optimize: std.builtin.OptimizeMode = .ReleaseSmall;
     // const optimize: std.builtin.OptimizeMode = .Debug;
 
     const exe = b.addExecutable(.{
         .name = "webgame_v0",
         .root_source_file = b.path("src/main.zig"),
-        .target = target,
+        .target = wasm_target,
         .optimize = optimize,
     });
 
@@ -34,7 +35,7 @@ pub fn build(b: *std.Build) void {
     // but does not run it.
     const exe_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/main.zig"),
-        .target = b.standardTargetOptions(.{}),
+        .target = actual_target,
         .optimize = optimize,
     });
 
@@ -45,4 +46,24 @@ pub fn build(b: *std.Build) void {
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_unit_tests.step);
+
+    const dev_server_exe = b.addExecutable(.{
+        .name = "dev_server",
+        .root_source_file = b.path("src/dev_server.zig"),
+        .target = actual_target,
+        .optimize = optimize,
+    });
+    dev_server_exe.root_module.addImport("mime", b.dependency("mime", .{
+        .target = actual_target,
+        .optimize = optimize,
+    }).module("mime"));
+    const run_dev_server = b.addRunArtifact(dev_server_exe);
+    run_dev_server.step.dependOn(b.getInstallStep());
+
+    // b.path(b.getInstallPath(dir: InstallDir, dest_rel_path: []const u8))
+    // run_dev_server.setCwd(cwd: Build.LazyPath)
+    // b.getInstallPath(dir: InstallDir, dest_rel_path: []const u8)
+
+    const run_dev_server_step = b.step("dev", "Run the dev server");
+    run_dev_server_step.dependOn(&run_dev_server.step);
 }
