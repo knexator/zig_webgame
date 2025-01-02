@@ -1,3 +1,7 @@
+import { keys } from "./keycodes.js";
+
+console.log(keys);
+
 const container = document.querySelector("#canvas_container");
 const canvas = document.querySelector("#ctx_canvas");
 const ctx = canvas.getContext("2d");
@@ -143,22 +147,9 @@ requestAnimationFrame(every_frame);
 
 document.addEventListener("keydown", ev => {
     if (ev.repeat) return;
-    switch (ev.code) {
-        case 'KeyW':
-            wasm_exports.keydown(0);
-            break;
-        case 'KeyS':
-            wasm_exports.keydown(1);
-            break;
-        case 'KeyA':
-            wasm_exports.keydown(2);
-            break;
-        case 'KeyD':
-            wasm_exports.keydown(3);
-            break;
-    
-        default:
-            break;
+    const key_num = keys[ev.code];
+    if (key_num !== undefined) {
+        wasm_exports.keydown(key_num);
     }
 });
 

@@ -24,6 +24,8 @@ test "simple test" {
     try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
 
+const KeyCode = @import("generate_keycodes_js.zig").KeyCode;
+
 const DEBUG_ANIM = false;
 
 const BOARD_SIDE = 16;
@@ -257,13 +259,13 @@ fn drawSnakeHead(tile: BoardPosition, dir_in: Direction, color: Color) void {
     drawSnakeHead_native(tile.i, tile.j, dir_in.di(), dir_in.dj(), color.r, color.g, color.b);
 }
 
-export fn keydown(code: u32) void {
+export fn keydown(code: KeyCode) void {
     const maybe_dir: ?Direction = switch (code) {
-        0 => .Up,
-        1 => .Down,
-        2 => .Left,
-        3 => .Right,
-        else => null,
+        .KeyW => .Up,
+        .KeyS => .Down,
+        .KeyA => .Left,
+        .KeyD => .Right,
+        // else => null,
     };
     if (maybe_dir) |dir| {
         input_buffer.append(dir) catch {

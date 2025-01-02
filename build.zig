@@ -38,6 +38,15 @@ pub fn build(b: *std.Build) void {
     });
     b.getInstallStep().dependOn(&copy_static_files.step);
 
+    const generate_keycodes = b.addExecutable(.{
+        .name = "generate_keycodes",
+        .root_source_file = b.path("src/generate_keycodes_js.zig"),
+        .target = b.graph.host,
+    });
+    const generate_keycodes_step = b.addRunArtifact(generate_keycodes);
+    const output = generate_keycodes_step.addOutputFileArg("keycodes.js");
+    b.getInstallStep().dependOn(&b.addInstallFileWithDir(output, webgame_install_dir, "keycodes.js").step);
+
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const exe_unit_tests = b.addTest(.{
