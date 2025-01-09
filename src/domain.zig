@@ -2,16 +2,9 @@ const std = @import("std");
 
 const CircularBuffer = @import("./circular_buffer.zig").CircularBuffer;
 
-// test external stuff
-comptime {
-    _ = @import("./circular_buffer.zig");
-}
-
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+test {
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(@import("./circular_buffer.zig"));
 }
 
 const DEBUG_ANIM = false;
@@ -81,67 +74,59 @@ const TileState = union(enum) {
     body_segment: SnakeSegment,
 };
 
-pub fn Drawer(
-    comptime fillTile_native: fn (i: usize, j: usize, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime fillTile_float_native: fn (i: f32, j: f32, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime fillTileWithCircle_native: fn (i: usize, j: usize, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime drawSnakeCorner_native: fn (i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime drawSnakeCorner_float_native: fn (i: f32, j: f32, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime drawSnakeHead_native: fn (i: usize, j: usize, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime drawSnakeHead_float_native: fn (i: f32, j: f32, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime drawSnakeScarf_first_native: fn (t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
-    comptime drawSnakeScarf_last_native: fn (t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
-) type {
-    return struct {
-        comptime fillTile_native: fn (i: usize, j: usize, r: u8, g: u8, b: u8) callconv(.C) void = fillTile_native,
-        comptime fillTile_float_native: fn (i: f32, j: f32, r: u8, g: u8, b: u8) callconv(.C) void = fillTile_float_native,
-        comptime fillTileWithCircle_native: fn (i: usize, j: usize, r: u8, g: u8, b: u8) callconv(.C) void = fillTileWithCircle_native,
-        comptime drawSnakeCorner_native: fn (i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void = drawSnakeCorner_native,
-        comptime drawSnakeCorner_float_native: fn (i: f32, j: f32, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void = drawSnakeCorner_float_native,
-        comptime drawSnakeHead_native: fn (i: usize, j: usize, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) callconv(.C) void = drawSnakeHead_native,
-        comptime drawSnakeHead_float_native: fn (i: f32, j: f32, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) callconv(.C) void = drawSnakeHead_float_native,
-        comptime drawSnakeScarf_first_native: fn (t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void = drawSnakeScarf_first_native,
-        comptime drawSnakeScarf_last_native: fn (t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void = drawSnakeScarf_last_native,
+pub const LayerStuff = struct {
+    fillTile_native: fn (i: usize, j: usize, r: u8, g: u8, b: u8) callconv(.C) void,
+    fillTile_float_native: fn (i: f32, j: f32, r: u8, g: u8, b: u8) callconv(.C) void,
+    fillTileWithCircle_native: fn (i: usize, j: usize, r: u8, g: u8, b: u8) callconv(.C) void,
+    drawSnakeCorner_native: fn (i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
+    drawSnakeCorner_float_native: fn (i: f32, j: f32, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
+    drawSnakeHead_native: fn (i: usize, j: usize, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) callconv(.C) void,
+    drawSnakeHead_float_native: fn (i: f32, j: f32, di_in: i8, dj_in: i8, r: u8, g: u8, b: u8) callconv(.C) void,
+    drawSnakeScarf_first_native: fn (t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
+    drawSnakeScarf_last_native: fn (t: f32, i: usize, j: usize, di_in: i8, dj_in: i8, di_out: i8, dj_out: i8, r: u8, g: u8, b: u8) callconv(.C) void,
+};
 
+pub fn Drawer(comptime asdf: LayerStuff) type {
+    return struct {
         const Self = @This();
 
-        fn fillTile(drawer: Self, tile: BoardPosition, color: Color) void {
-            drawer.fillTile_native(tile.i, tile.j, color.r, color.g, color.b);
+        fn fillTile(tile: BoardPosition, color: Color) void {
+            asdf.fillTile_native(tile.i, tile.j, color.r, color.g, color.b);
         }
 
-        fn fillTile_float(drawer: Self, tile: BoardPositionFractional, color: Color) void {
-            drawer.fillTile_float_native(tile.i, tile.j, color.r, color.g, color.b);
+        fn fillTile_float(tile: BoardPositionFractional, color: Color) void {
+            asdf.fillTile_float_native(tile.i, tile.j, color.r, color.g, color.b);
         }
 
-        fn fillTileWithCircle(drawer: Self, tile: BoardPosition, color: Color) void {
-            drawer.fillTileWithCircle_native(tile.i, tile.j, color.r, color.g, color.b);
+        fn fillTileWithCircle(tile: BoardPosition, color: Color) void {
+            asdf.fillTileWithCircle_native(tile.i, tile.j, color.r, color.g, color.b);
         }
 
-        fn drawSnakeCorner(drawer: Self, tile: BoardPosition, dir_in: Direction, dir_out: Direction, color: Color) void {
-            drawer.drawSnakeCorner_native(tile.i, tile.j, dir_in.di(), dir_in.dj(), dir_out.di(), dir_out.dj(), color.r, color.g, color.b);
+        fn drawSnakeCorner(tile: BoardPosition, dir_in: Direction, dir_out: Direction, color: Color) void {
+            asdf.drawSnakeCorner_native(tile.i, tile.j, dir_in.di(), dir_in.dj(), dir_out.di(), dir_out.dj(), color.r, color.g, color.b);
         }
 
-        fn drawSnakeHead(drawer: Self, tile: BoardPosition, dir_in: Direction, color: Color) void {
-            drawer.drawSnakeHead_native(tile.i, tile.j, dir_in.di(), dir_in.dj(), color.r, color.g, color.b);
+        fn drawSnakeHead(tile: BoardPosition, dir_in: Direction, color: Color) void {
+            asdf.drawSnakeHead_native(tile.i, tile.j, dir_in.di(), dir_in.dj(), color.r, color.g, color.b);
         }
 
-        pub fn drawBoardTile(drawer: Self, game: Game, pos: BoardPosition, tile: TileState) void {
+        fn drawBoardTile(game: Game, pos: BoardPosition, tile: TileState) void {
             switch (tile) {
                 .empty => {},
-                .bomb => drawer.fillTileWithCircle(pos, COLORS.BOMB),
+                .bomb => Self.fillTileWithCircle(pos, COLORS.BOMB),
                 .body_segment => |body| if (body.visited_at == game.turn) {
                     // head: drawn later
                 } else if (body.visited_at + 1 == game.turn) {
                     // scarf: drawn later
                 } else {
                     // body
-                    drawer.drawSnakeSegment(game, pos, body, if ((pos.i + pos.j) % 2 == 0) COLORS.SNAKE.BODY1 else COLORS.SNAKE.BODY2);
+                    Self.drawSnakeSegment(game, pos, body, if ((pos.i + pos.j) % 2 == 0) COLORS.SNAKE.BODY1 else COLORS.SNAKE.BODY2);
                 },
                 else => {},
             }
         }
 
-        pub fn drawSnakeHeadAndScarf(drawer: Self, game: Game) void {
+        fn drawSnakeHeadAndScarf(game: Game) void {
             const in_dir = game.tileAtConst(game.head_pos).body_segment.in_dir;
 
             if (game.cur_explosion_particle == null) {
@@ -149,16 +134,16 @@ pub fn Drawer(
                 const scarf = game.tileAtConst(scarf_pos).body_segment;
                 const color = COLORS.SNAKE.SCARF;
                 if (game.turn_offset < ANIM_PERC) {
-                    drawer.drawSnakeScarf_first_native(game.turn_offset / ANIM_PERC, scarf_pos.i, scarf_pos.j, scarf.in_dir.di(), scarf.in_dir.dj(), scarf.out_dir.?.di(), scarf.out_dir.?.dj(), color.r, color.g, color.b);
+                    asdf.drawSnakeScarf_first_native(game.turn_offset / ANIM_PERC, scarf_pos.i, scarf_pos.j, scarf.in_dir.di(), scarf.in_dir.dj(), scarf.out_dir.?.di(), scarf.out_dir.?.dj(), color.r, color.g, color.b);
 
                     const prev_scarf_pos = scarf_pos.plus(scarf.in_dir);
                     const prev_scarf = game.tileAtConst(prev_scarf_pos).body_segment;
-                    drawer.drawSnakeScarf_last_native(game.turn_offset / ANIM_PERC, prev_scarf_pos.i, prev_scarf_pos.j, prev_scarf.in_dir.di(), prev_scarf.in_dir.dj(), prev_scarf.out_dir.?.di(), prev_scarf.out_dir.?.dj(), color.r, color.g, color.b);
+                    asdf.drawSnakeScarf_last_native(game.turn_offset / ANIM_PERC, prev_scarf_pos.i, prev_scarf_pos.j, prev_scarf.in_dir.di(), prev_scarf.in_dir.dj(), prev_scarf.out_dir.?.di(), prev_scarf.out_dir.?.dj(), color.r, color.g, color.b);
                 } else {
                     if (scarf.in_dir.opposite() == scarf.out_dir.?) {
-                        drawer.fillTile(scarf_pos, color);
+                        Self.fillTile(scarf_pos, color);
                     } else {
-                        drawer.drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, color);
+                        Self.drawSnakeCorner(scarf_pos, scarf.in_dir, scarf.out_dir.?, color);
                     }
                 }
             }
@@ -166,22 +151,53 @@ pub fn Drawer(
             if (game.turn_offset < ANIM_PERC) {
                 const color = COLORS.SNAKE.HEAD;
                 const lerped_pos = game.head_pos.plus_fractional(in_dir, 1.0 - (game.turn_offset / ANIM_PERC));
-                drawer.drawSnakeHead_float_native(lerped_pos.i, lerped_pos.j, in_dir.di(), in_dir.dj(), color.r, color.g, color.b);
+                asdf.drawSnakeHead_float_native(lerped_pos.i, lerped_pos.j, in_dir.di(), in_dir.dj(), color.r, color.g, color.b);
             } else {
-                drawer.drawSnakeHead(game.head_pos, in_dir, COLORS.SNAKE.HEAD);
+                Self.drawSnakeHead(game.head_pos, in_dir, COLORS.SNAKE.HEAD);
             }
         }
 
-        pub fn drawSnakeSegment(drawer: Self, game: Game, pos: BoardPosition, body: SnakeSegment, color: Color) void {
+        fn drawSnakeSegment(game: Game, pos: BoardPosition, body: SnakeSegment, color: Color) void {
             if (body.out_dir == null) {
                 if (game.turn_offset < TURN_DURATION) {} else {
-                    drawer.drawSnakeHead(pos, body.in_dir, color);
+                    Self.drawSnakeHead(pos, body.in_dir, color);
                 }
             } else if (body.in_dir.opposite() == body.out_dir.?) {
-                drawer.fillTile(pos, color);
+                Self.fillTile(pos, color);
             } else {
-                drawer.drawSnakeCorner(pos, body.in_dir, body.out_dir.?, color);
+                Self.drawSnakeCorner(pos, body.in_dir, body.out_dir.?, color);
             }
+        }
+
+        pub fn draw(game: Game) void {
+            for (0..BOARD_SIDE) |j| {
+                for (0..BOARD_SIDE) |i| {
+                    Self.fillTile(.{ .i = i, .j = j }, if ((i + j) % 2 == 0)
+                        COLORS.BACKGROUND.MAIN
+                    else if ((i + j + 1) % 4 == 0)
+                        COLORS.BACKGROUND.DIAG1
+                    else
+                        COLORS.BACKGROUND.DIAG2);
+                }
+            }
+
+            if (game.cur_explosion_particle) |explosion_pos| {
+                for (0..BOARD_SIDE) |j| {
+                    for (0..BOARD_SIDE) |i| {
+                        if (i == explosion_pos.i or j == explosion_pos.j) {
+                            Self.fillTile(.{ .i = i, .j = j }, COLORS.EXPLOSION);
+                        }
+                    }
+                }
+            }
+
+            for (game.board_state, 0..) |board_row, j| {
+                for (board_row, 0..) |board_tile, i| {
+                    Self.drawBoardTile(game, .{ .i = i, .j = j }, board_tile);
+                }
+            }
+
+            Self.drawSnakeHeadAndScarf(game);
         }
     };
 }
@@ -251,38 +267,6 @@ pub const Game = struct {
             } };
             game.head_pos = new_head_pos;
         }
-    }
-
-    // TODO: remove anytype
-    pub fn draw(game: Game, drawer: anytype) void {
-        for (0..BOARD_SIDE) |j| {
-            for (0..BOARD_SIDE) |i| {
-                drawer.fillTile(.{ .i = i, .j = j }, if ((i + j) % 2 == 0)
-                    COLORS.BACKGROUND.MAIN
-                else if ((i + j + 1) % 4 == 0)
-                    COLORS.BACKGROUND.DIAG1
-                else
-                    COLORS.BACKGROUND.DIAG2);
-            }
-        }
-
-        if (game.cur_explosion_particle) |explosion_pos| {
-            for (0..BOARD_SIDE) |j| {
-                for (0..BOARD_SIDE) |i| {
-                    if (i == explosion_pos.i or j == explosion_pos.j) {
-                        drawer.fillTile(.{ .i = i, .j = j }, COLORS.EXPLOSION);
-                    }
-                }
-            }
-        }
-
-        for (game.board_state, 0..) |board_row, j| {
-            for (board_row, 0..) |board_tile, i| {
-                drawer.drawBoardTile(game, .{ .i = i, .j = j }, board_tile);
-            }
-        }
-
-        drawer.drawSnakeHeadAndScarf(game);
     }
 
     fn placeBomb(game: *Game) void {

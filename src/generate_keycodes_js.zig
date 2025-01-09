@@ -1,11 +1,5 @@
-pub const KeyCode = enum(u32) {
-    KeyW,
-    KeyS,
-    KeyA,
-    KeyD,
-};
-
 const std = @import("std");
+const KeyCode = @import("presenter.zig").KeyCode;
 
 pub fn main() !void {
     var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
