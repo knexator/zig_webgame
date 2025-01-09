@@ -20,6 +20,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // taken from https://github.com/daneelsan/minimal-zig-wasm-canvas/blob/master/build.zig
     exe.global_base = 6560;
     exe.entry = .disabled;
     exe.rdynamic = true;
